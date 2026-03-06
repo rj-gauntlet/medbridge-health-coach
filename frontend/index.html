@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    (function(){
+      var t = localStorage.getItem('medbridge-theme');
+      if (!t && window.matchMedia('(prefers-color-scheme: dark)').matches) t = 'dark';
+      document.documentElement.setAttribute('data-theme', t || 'light');
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedBridge AI Health Coach</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Layout: mockup 4. Colors: mockup 5 (Soft & Calm) */
+    :root, [data-theme="light"] {
+      --primary: #B8A060;
+      --primary-soft: #E8E2D0;
+      --primary-container: #F5F2E8;
+      --surface: #FAF9F6;
+      --surface-container: #F0EDE6;
+      --surface-container-high: #FFFFFF;
+      --outline: #D9D4C8;
+      --outline-variant: #E8E4DC;
+      --text: #3d3a35;
+      --text-muted: #7a756c;
+      --user-bubble: #5c574d;
+      --coach-bubble: #FFFFFF;
+      --accent-warm: #D4B896;
+      --body-bg: #FAF9F6;
+      --container-bg: #FFFFFF;
+      --container-shadow: 0 4px 24px rgba(61,58,53,0.06);
+      --radius: 1.125rem;
+      --radius-sm: 0.875rem;
+    }
+    [data-theme="dark"] {
+      --primary: #D4B876;
+      --primary-soft: #3d3828;
+      --primary-container: #2e2a22;
+      --surface: #252320;
+      --surface-container: #1f1d1a;
+      --surface-container-high: #2e2b26;
+      --outline: #4a453d;
+      --outline-variant: #3d3828;
+      --text: #f5f2ec;
+      --text-muted: #a39e94;
+      --user-bubble: #D4B876;
+      --coach-bubble: #2e2b26;
+      --accent-warm: #5c5544;
+      --body-bg: #121210;
+      --container-bg: #252320;
+      --container-shadow: none;
+      --radius: 1rem;
+      --radius-sm: 0.625rem;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Nunito', -apple-system, sans-serif;
+      background: var(--body-bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 1.5rem 1rem;
+      transition: background 0.25s, color 0.25s;
+    }
+    .container {
+      max-width: 600px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 2rem);
+      min-height: 400px;
+      background: var(--container-bg);
+      border-radius: 1.25rem;
+      border: 1px solid var(--outline);
+      box-shadow: var(--container-shadow);
+      overflow: hidden;
+      transition: background 0.25s, border-color 0.25s, box-shadow 0.25s;
+    }
+    header {
+      padding: 1.5rem 1.25rem;
+      border-bottom: 1px solid var(--outline);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .logo img { height: 40px; width: auto; display: block; }
+    header .header-text { flex: 1; min-width: 0; }
+    header h1 { font-size: 1.25rem; font-weight: 700; }
+    header p { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .theme-toggle {
+      width: 32px; height: 32px;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      opacity: 0.7;
+      transition: opacity 0.2s, color 0.2s;
+    }
+    .theme-toggle:hover { opacity: 1; color: var(--text); }
+    .patient-row {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      background: var(--surface-container);
+    }
+    .patient-row input {
+      flex: 1;
+      padding: 0.7rem 1rem;
+      border: 1px solid var(--outline);
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      background: var(--surface-container-high);
+      color: var(--text);
+      font-family: inherit;
+    }
+    .patient-row input::placeholder { color: var(--text-muted); }
+    .load-btn {
+      padding: 0.7rem 1rem;
+      font-size: 0.9rem;
+      background: var(--primary-soft);
+      color: var(--text);
+      border: 1px solid var(--outline);
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .load-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 1.25rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--outline);
+      flex-wrap: wrap;
+    }
+    .phase-badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+    [data-theme="light"] .phase-badge.onboarding { background: #E8E2D0; color: #5c5340; }
+    [data-theme="light"] .phase-badge.active { background: #d4e8d4; color: #2d5a2d; }
+    [data-theme="light"] .phase-badge.re-engaging { background: #f5e8c8; color: #7a5c20; }
+    [data-theme="light"] .phase-badge.dormant { background: #e8e4dc; color: #5c574d; }
+    [data-theme="light"] .phase-badge.pending { background: #e8e4dc; color: #5c574d; }
+    [data-theme="dark"] .phase-badge.onboarding { background: rgba(212,184,118,0.2); color: #D4B876; }
+    [data-theme="dark"] .phase-badge.active { background: rgba(100,180,100,0.2); color: #8bc98b; }
+    [data-theme="dark"] .phase-badge.re-engaging { background: rgba(212,184,118,0.25); color: #e5c878; }
+    [data-theme="dark"] .phase-badge.dormant { background: rgba(163,158,148,0.2); color: #a39e94; }
+    [data-theme="dark"] .phase-badge.pending { background: rgba(163,158,148,0.2); color: #a39e94; }
+    .goal-display { font-style: italic; }
+    .chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-height: 0;
+    }
+    .message {
+      max-width: 80%;
+      padding: 1rem 1.2rem;
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .message.user {
+      align-self: flex-end;
+      background: var(--user-bubble);
+      border-bottom-right-radius: 4px;
+    }
+    [data-theme="light"] .message.user { color: #ffffff; }
+    [data-theme="dark"] .message.user { color: #1a1a1a; }
+    .message.coach {
+      align-self: flex-start;
+      background: var(--coach-bubble);
+      border: 1px solid var(--outline);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+    }
+    .message .role {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.8;
+      margin-bottom: 0.25rem;
+    }
+    .message.typing { opacity: 0.6; font-style: italic; }
+    .input-area {
+      display: flex;
+      gap: 0.5rem;
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--outline);
+      flex-shrink: 0;
+      background: var(--container-bg);
+    }
+    .input-area input {
+      flex: 1;
+      padding: 0.85rem 1.2rem;
+      border: 1px solid var(--outline);
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      background: var(--surface-container-high);
+      color: var(--text);
+      font-family: inherit;
+    }
+    .input-area input::placeholder { color: var(--text-muted); }
+    .input-area input:focus { outline: none; border-color: var(--primary); }
+    .input-area button {
+      padding: 0.85rem 1.3rem;
+      background: var(--primary);
+      border: none;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.2s;
+    }
+    [data-theme="light"] .input-area button { color: #ffffff; }
+    [data-theme="dark"] .input-area button { color: #1a1a1a; }
+    [data-theme="light"] .input-area button { color: #ffffff; }
+    [data-theme="dark"] .input-area button { color: #1a1a1a; }
+    .input-area button:hover { opacity: 0.9; }
+    .input-area button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .empty-state {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <img id="logoImg" src="assets/mockups/assets/logo-black.png" alt="MedBridge" />
+      </div>
+      <div class="header-text">
+        <h1>AI Health Coach</h1>
+        <p>Your accountability partner for home exercises</p>
+      </div>
+      <button type="button" class="theme-toggle" id="themeToggle" title="Toggle light/dark mode" aria-label="Toggle theme">🌙</button>
+    </header>
+
+    <div class="patient-row">
+      <input type="text" id="patientId" placeholder="Patient ID" value="patient-001" />
+      <button type="button" class="load-btn" id="loadBtn">Load / Refresh</button>
+    </div>
+
+    <div class="status-bar" id="statusBar" style="display: none;">
+      <span class="phase-badge pending" id="phaseBadge">—</span>
+      <span class="goal-display" id="goalDisplay"></span>
+    </div>
+
+    <div class="chat" id="chat"></div>
+
+    <div class="input-area">
+      <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const chatEl = document.getElementById('chat');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const patientIdEl = document.getElementById('patientId');
+    const loadBtn = document.getElementById('loadBtn');
+    const themeToggle = document.getElementById('themeToggle');
+    const logoImg = document.getElementById('logoImg');
+
+    const THEME_KEY = 'medbridge-theme';
+
+    function getTheme() {
+      return localStorage.getItem(THEME_KEY) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    }
+
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem(THEME_KEY, theme);
+      logoImg.src = theme === 'dark' ? 'assets/mockups/assets/logo-white.png' : 'assets/mockups/assets/logo-black.png';
+      themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+      themeToggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    }
+
+    themeToggle.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      setTheme(next);
+    });
+
+    setTheme(getTheme());
+
+    let threadId = null;
+    let pollInterval = null;
+
+    function addMessage(content, role) {
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      const roleSpan = document.createElement('div');
+      roleSpan.className = 'role';
+      roleSpan.textContent = role === 'user' ? 'You' : 'Coach';
+      div.appendChild(roleSpan);
+      const text = document.createElement('div');
+      text.textContent = content;
+      div.appendChild(text);
+      chatEl.appendChild(div);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function showTyping() {
+      const div = document.createElement('div');
+      div.className = 'message coach typing';
+      div.id = 'typing';
+      div.textContent = 'Thinking...';
+      chatEl.appendChild(div);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function hideTyping() {
+      const el = document.getElementById('typing');
+      if (el) el.remove();
+    }
+
+    function renderMessages(messages) {
+      chatEl.innerHTML = '';
+      if (!messages || messages.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = 'No messages yet. Say hello to get started!';
+        chatEl.appendChild(empty);
+        return;
+      }
+      for (const m of messages) {
+        const role = m.role === 'user' ? 'user' : 'coach';
+        addMessage(m.content, role);
+      }
+    }
+
+    function updateStatusBar(phase, goal, hasThread) {
+      const bar = document.getElementById('statusBar');
+      const badge = document.getElementById('phaseBadge');
+      const goalEl = document.getElementById('goalDisplay');
+      if (!hasThread || !phase) { bar.style.display = 'none'; return; }
+      bar.style.display = 'flex';
+      const phaseLower = (phase || '').toLowerCase().replace('_', '-');
+      badge.textContent = phase.replace('_', ' ');
+      badge.className = 'phase-badge ' + (phaseLower || 'pending');
+      if (goal && goal.description) {
+        goalEl.textContent = 'Goal: ' + goal.description + (goal.frequency ? ' (' + goal.frequency + ')' : '');
+        goalEl.style.display = '';
+      } else {
+        goalEl.textContent = '';
+        goalEl.style.display = 'none';
+      }
+    }
+
+    async function loadThread() {
+      const patientId = patientIdEl.value.trim() || 'patient-001';
+      try {
+        const url = `/api/thread?patient_id=${encodeURIComponent(patientId)}` +
+          (threadId ? `&thread_id=${encodeURIComponent(threadId)}` : '');
+        const res = await fetch(url);
+        const data = await res.json();
+        threadId = data.thread_id || null;
+        renderMessages(data.messages || []);
+        updateStatusBar(data.phase, data.goal, !!data.thread_id);
+      } catch (err) {
+        console.error('Failed to load thread', err);
+      }
+    }
+
+    function startPolling() {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(loadThread, 30000);
+    }
+
+    loadBtn.addEventListener('click', () => { threadId = null; loadThread(); startPolling(); });
+    patientIdEl.addEventListener('blur', () => { threadId = null; loadThread(); });
+    window.addEventListener('focus', loadThread);
+    loadThread();
+    startPolling();
+
+    async function send() {
+      const content = messageInput.value.trim();
+      const patientId = patientIdEl.value.trim() || 'patient-001';
+      if (!content) return;
+
+      addMessage(content, 'user');
+      messageInput.value = '';
+      sendBtn.disabled = true;
+      showTyping();
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            patient_id: patientId,
+            message: content,
+            thread_id: threadId || undefined,
+          }),
+        });
+        const data = await res.json();
+        hideTyping();
+        addMessage(data.reply, 'coach');
+        threadId = data.thread_id;
+        updateStatusBar(data.phase, null, !!data.thread_id);
+        loadThread();
+      } catch (err) {
+        hideTyping();
+        addMessage('Sorry, something went wrong. Please try again.', 'coach');
+        console.error(err);
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    sendBtn.addEventListener('click', send);
+    messageInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        send();
+      }
+    });
+  </script>
+</body>
+</html>

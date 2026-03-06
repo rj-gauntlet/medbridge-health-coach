@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mockup 2: Clinical Clean | MedBridge AI Coach</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* High contrast, minimal, clinical. Black + white + yellow accent only for CTAs */
+    :root {
+      --primary: #F5B800;
+      --on-primary: #1a1a1a;
+      --surface: #ffffff;
+      --surface-variant: #f5f5f5;
+      --outline: #e0e0e0;
+      --text: #1a1a1a;
+      --text-muted: #757575;
+      --user-bubble: #1a1a1a;
+      --coach-bubble: #f5f5f5;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #fafafa;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem;
+    }
+    .container { max-width: 520px; width: 100%; display: flex; flex-direction: column; height: 90vh; max-height: 680px; background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden; }
+    header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--outline);
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .logo img { height: 36px; width: auto; }
+    header h1 { font-size: 1.15rem; font-weight: 600; }
+    header p { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; }
+    .patient-row {
+      display: flex; gap: 0.5rem; padding: 0.75rem 1.5rem;
+      background: var(--surface-variant); border-bottom: 1px solid var(--outline);
+    }
+    .patient-row input {
+      flex: 1; padding: 0.6rem 1rem;
+      border: 1px solid var(--outline); border-radius: var(--radius);
+      font-size: 0.9rem; background: white;
+    }
+    .load-btn {
+      padding: 0.6rem 1rem; font-size: 0.85rem;
+      background: white; color: var(--text);
+      border: 1px solid var(--outline); border-radius: var(--radius);
+      font-weight: 500; cursor: pointer;
+    }
+    .status-bar {
+      display: flex; gap: 0.75rem; padding: 0.5rem 1.5rem;
+      font-size: 0.75rem; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .badge { font-weight: 600; color: var(--text); }
+    .chat {
+      flex: 1; overflow-y: auto; padding: 1rem 1.5rem;
+      display: flex; flex-direction: column; gap: 0.75rem;
+    }
+    .msg {
+      max-width: 80%; padding: 0.85rem 1rem;
+      border-radius: var(--radius); font-size: 0.9rem; line-height: 1.5;
+    }
+    .msg.user {
+      align-self: flex-end; background: var(--user-bubble); color: white;
+    }
+    .msg.coach {
+      align-self: flex-start; background: var(--coach-bubble); color: var(--text);
+    }
+    .input-area {
+      display: flex; gap: 0.5rem; padding: 1rem 1.5rem;
+      border-top: 1px solid var(--outline);
+    }
+    .input-area input {
+      flex: 1; padding: 0.75rem 1rem;
+      border: 1px solid var(--outline); border-radius: var(--radius);
+      font-size: 0.9rem;
+    }
+    .input-area button {
+      padding: 0.75rem 1.25rem; background: var(--primary);
+      color: var(--on-primary); border: none; border-radius: var(--radius);
+      font-weight: 600; font-size: 0.9rem; cursor: pointer;
+    }
+    .mockup-label {
+      position: fixed; top: 0.5rem; right: 0.5rem;
+      background: #1a1a1a; color: white;
+      padding: 0.35rem 0.75rem; border-radius: 0.5rem;
+      font-size: 0.75rem; font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <span class="mockup-label">Mockup 2: Clinical Clean</span>
+  <div class="container">
+    <header>
+      <div class="logo"><img src="assets/logo-black.png" alt="MedBridge" /></div>
+      <div>
+        <h1>AI Health Coach</h1>
+        <p>Patient accountability partner</p>
+      </div>
+    </header>
+    <div class="patient-row">
+      <input type="text" placeholder="Patient ID" value="patient-069">
+      <button class="load-btn">Load</button>
+    </div>
+    <div class="status-bar">
+      <span class="badge">Active</span>
+      <span>Walk 15 min, 3×/week</span>
+    </div>
+    <div class="chat">
+      <div class="msg coach">Hi! I'm your AI coach. How are you feeling today?</div>
+      <div class="msg user">Doing okay, a bit sore from yesterday's stretches.</div>
+      <div class="msg coach">That's normal. Did you do your morning walk?</div>
+    </div>
+    <div class="input-area">
+      <input type="text" placeholder="Type your message..." />
+      <button>Send</button>
+    </div>
+  </div>
+</body>
+</html>

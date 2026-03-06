@@ -1,0 +1,14 @@
+.env
+backend/tests/.test_*.db
+*.pyc
+__pycache__/
+.venv/
+venv/
+*.db
+data/
+.DS_Store
+.idea/
+.vscode/
+dist/
+build/
+*.egg-info/
