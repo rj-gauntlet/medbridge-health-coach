@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinician Dashboard | MedBridge AI Coach</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root, [data-theme="light"] {
+      --primary: #B8A060; --surface: #FAF9F6; --container: #fff; --outline: #D9D4C8;
+      --text: #3d3a35; --text-muted: #7a756c;
+    }
+    [data-theme="dark"] {
+      --primary: #D4B876; --surface: #121210; --container: #252320; --outline: #4a453d;
+      --text: #f5f2ec; --text-muted: #a39e94;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Nunito', sans-serif; background: var(--surface); color: var(--text); min-height: 100vh; padding: 1.5rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    p { color: var(--text-muted); margin-bottom: 1rem; }
+    a { color: var(--primary); }
+    .container { max-width: 900px; margin: 0 auto; background: var(--container); border-radius: 1rem; border: 1px solid var(--outline); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--outline); }
+    th { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; }
+    .phase { padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+    .phase.active { background: #dcfce7; color: #15803d; }
+    .phase.onboarding { background: #dbeafe; color: #1d4ed8; }
+    .phase.re-engaging { background: #fef3c7; color: #b45309; }
+    .phase.dormant { background: #f1f5f9; color: #64748b; }
+    .phase.pending { background: #f1f5f9; color: #64748b; }
+    .at-risk { color: #dc2626; font-weight: 600; }
+    .summary-preview { font-size: 0.85rem; color: var(--text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .empty { padding: 2rem; text-align: center; color: var(--text-muted); }
+    .expand-btn { padding: 0.35rem 0.6rem; font-size: 0.75rem; background: var(--primary); color: #fff; border: none; border-radius: 0.5rem; cursor: pointer; }
+    .expand-btn:hover { opacity: 0.9; }
+    .patient-row { cursor: pointer; }
+    .patient-row:hover { background: rgba(184, 160, 96, 0.08); }
+    .drawer-row td { padding: 0; vertical-align: top; background: var(--surface); border-bottom: 1px solid var(--outline); }
+    .drawer-content { padding: 1.25rem 1.5rem; }
+    .drawer-section { margin-bottom: 1rem; }
+    .drawer-section:last-child { margin-bottom: 0; }
+    .drawer-section h4 { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.4rem; }
+    .drawer-section p, .drawer-section ul { font-size: 0.9rem; line-height: 1.5; }
+    .drawer-section ul { list-style: none; }
+    .drawer-section li { padding: 0.25rem 0; border-bottom: 1px solid var(--outline); }
+    .drawer-section li:last-child { border-bottom: none; }
+    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .header-row img { height: 36px; width: auto; display: block; }
+  </style>
+</head>
+<body>
+  <div class="header-row">
+    <img src="assets/mockups/assets/logo-black.png" alt="MedBridge" />
+    <h1>Clinician Dashboard</h1>
+  </div>
+  <p>Patient overview: phase, adherence, and conversation summaries. Click a row to open details. <a href="/">← Back to Chat</a></p>
+  <div class="container">
+    <table>
+      <thead>
+        <tr><th>Patient</th><th>Phase</th><th>Goal</th><th>Last Active</th><th>Alerts</th><th></th></tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="empty" class="empty" style="display:none">No patients yet.</div>
+  </div>
+  <script>
+    (async function() {
+      const tbody = document.getElementById('tbody');
+      const empty = document.getElementById('empty');
+      let openDrawerId = null;
+
+      function renderDrawer(p, pros) {
+        const prosHtml = !pros || pros.length === 0
+          ? '<p>No PROs recorded yet.</p>'
+          : '<ul>' + pros.map(pr =>
+              '<li>Pain ' + (pr.pain ?? '—') + '/10, Difficulty ' + (pr.difficulty ?? '—') + '/10, Adherence ' + (pr.adherence_rating ?? '—') + '/10 — ' + (pr.recorded_at ? pr.recorded_at.slice(0, 10) : '') + '</li>'
+            ).join('') + '</ul>';
+        return `
+          <div class="drawer-content">
+            <div class="drawer-section">
+              <h4>Conversation Summary</h4>
+              <p>${p.conversation_summary || 'No summary yet.'}</p>
+            </div>
+            <div class="drawer-section">
+              <h4>Goal</h4>
+              <p>${p.goal || '—'}</p>
+            </div>
+            <div class="drawer-section">
+              <h4>Details</h4>
+              <p>Thread ID: <code>${p.thread_id}</code><br>
+              Last active: ${p.last_interaction_at ? new Date(p.last_interaction_at).toLocaleString() : '—'}<br>
+              Unanswered coach messages: ${p.unanswered_count}<br>
+              ${p.at_risk ? '<span class="at-risk">⚠ At risk</span>' : ''}</p>
+            </div>
+            <div class="drawer-section">
+              <h4>Patient-Reported Outcomes</h4>
+              ${prosHtml}
+            </div>
+          </div>
+        `;
+      }
+
+      async function toggleDrawer(p) {
+        const drawerId = 'drawer-' + p.thread_id;
+        if (openDrawerId === drawerId) {
+          document.getElementById(drawerId)?.remove();
+          openDrawerId = null;
+          return;
+        }
+        if (openDrawerId) {
+          document.getElementById(openDrawerId)?.remove();
+        }
+        const drawerTr = document.createElement('tr');
+        drawerTr.className = 'drawer-row';
+        drawerTr.id = drawerId;
+        const td = document.createElement('td');
+        td.colSpan = 6;
+        td.innerHTML = '<p style="padding:1rem;color:var(--text-muted)">Loading…</p>';
+        drawerTr.appendChild(td);
+        const dataRow = document.querySelector(`tr[data-thread-id="${p.thread_id}"]`);
+        dataRow.after(drawerTr);
+
+        try {
+          const prosRes = await fetch('/api/pros?thread_id=' + encodeURIComponent(p.thread_id));
+          const pros = await prosRes.json();
+          td.innerHTML = renderDrawer(p, pros);
+        } catch (e) {
+          td.innerHTML = '<p style="padding:1rem;color:var(--text-muted)">Could not load details.</p>';
+        }
+        openDrawerId = drawerId;
+      }
+
+      try {
+        const res = await fetch('/api/dashboard');
+        const data = await res.json();
+        if (!data.patients || data.patients.length === 0) {
+          empty.style.display = 'block';
+          return;
+        }
+        for (const p of data.patients) {
+          const tr = document.createElement('tr');
+          tr.className = 'patient-row';
+          tr.dataset.threadId = p.thread_id;
+          const phaseClass = (p.phase || '').toLowerCase().replace('_', '-');
+          const summaryPreview = (p.conversation_summary || '—').slice(0, 50) + ((p.conversation_summary || '').length > 50 ? '…' : '');
+          tr.innerHTML = `
+            <td>${p.patient_id}</td>
+            <td><span class="phase ${phaseClass}">${p.phase}</span></td>
+            <td>${(p.goal || '—').slice(0, 40)}${(p.goal || '').length > 40 ? '…' : ''}</td>
+            <td>${p.last_interaction_at ? new Date(p.last_interaction_at).toLocaleDateString() : '—'}</td>
+            <td>${p.at_risk ? '<span class="at-risk">At risk</span> ' : ''}${p.unanswered_count > 0 ? p.unanswered_count + ' unanswered' : '—'}</td>
+            <td><button type="button" class="expand-btn">Details</button></td>
+          `;
+          tr.addEventListener('click', (e) => { if (!e.target.classList.contains('expand-btn')) toggleDrawer(p); });
+          tr.querySelector('.expand-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleDrawer(p); });
+          tbody.appendChild(tr);
+        }
+      } catch (e) {
+        empty.textContent = 'Failed to load dashboard.';
+        empty.style.display = 'block';
+      }
+    })();
+  </script>
+</body>
+</html>

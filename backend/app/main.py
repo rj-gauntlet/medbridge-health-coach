@@ -8,8 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from app.api.routes import chat
-from app.api.deps import get_thread_repository, get_consent_service, get_coach_service
+from app.api.routes import chat, dashboard, epic
+from app.api.deps import get_thread_repository, get_consent_service, get_coach_service, get_pro_repository
 from app.config import get_settings
 from app.scheduler.jobs import create_scheduler
 
@@ -26,7 +26,8 @@ async def lifespan(app: FastAPI):
     day_seconds = settings.scheduler_day_seconds
     thread_repo = get_thread_repository()
     consent_service = get_consent_service()
-    coach = get_coach_service(thread_repo=thread_repo, consent_service=consent_service)
+    pro_repo = get_pro_repository()
+    coach = get_coach_service(thread_repo=thread_repo, consent_service=consent_service, pro_repo=pro_repo)
     _scheduler = create_scheduler(coach, day_seconds=day_seconds, interval_seconds=60)
     _scheduler.start()
     yield
@@ -50,6 +51,8 @@ app.add_middleware(
 )
 
 app.include_router(chat.router)
+app.include_router(dashboard.router)
+app.include_router(epic.router)
 
 
 @app.get("/health")
@@ -64,3 +67,11 @@ if FRONTEND_DIR.exists():
     @app.get("/")
     def index():
         return FileResponse(FRONTEND_DIR / "index.html")
+
+    @app.get("/dashboard")
+    def dashboard():
+        return FileResponse(FRONTEND_DIR / "dashboard.html")
+
+    @app.get("/exercises")
+    def exercises():
+        return FileResponse(FRONTEND_DIR / "exercises.html")

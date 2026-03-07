@@ -61,6 +61,11 @@ class SQLiteThreadRepository(IThreadRepository):
                 conn.execute("ALTER TABLE threads ADD COLUMN checkins_sent_json TEXT DEFAULT '[]'")
             except sqlite3.OperationalError:
                 pass
+            for col in ("personality", "conversation_summary", "last_summary_at"):
+                try:
+                    conn.execute(f"ALTER TABLE threads ADD COLUMN {col} TEXT")
+                except sqlite3.OperationalError:
+                    pass
 
     def _row_to_thread(self, row: dict) -> Thread:
         r = row if isinstance(row, dict) else {}
@@ -75,11 +80,27 @@ class SQLiteThreadRepository(IThreadRepository):
         goal_confirmed_at = r.get("goal_confirmed_at")
         last_coach_message_at = r.get("last_coach_message_at")
         checkins_sent_json = r.get("checkins_sent_json", "[]")
+        personality = r.get("personality") or "encouraging"
+        conversation_summary = r.get("conversation_summary")
+        last_summary_at = r.get("last_summary_at")
+
+        def _parse_msg_dt(s):
+            if not s:
+                return datetime.utcnow()
+            try:
+                return datetime.fromisoformat(str(s).replace("Z", "+00:00"))
+            except (ValueError, TypeError):
+                return datetime.utcnow()
 
         messages = []
         for m in json.loads(messages_json or "[]"):
+            created = m.get("created_at")
             messages.append(
-                Message(role=MessageRole(m["role"]), content=m["content"])
+                Message(
+                    role=MessageRole(m["role"]),
+                    content=m["content"],
+                    created_at=_parse_msg_dt(created),
+                )
             )
         goal = None
         if goal_json:
@@ -96,6 +117,9 @@ class SQLiteThreadRepository(IThreadRepository):
         checkins_sent = json.loads(checkins_sent_json or "[]")
 
         return Thread(
+            personality=personality,
+            conversation_summary=conversation_summary,
+            last_summary_at=_parse_dt(last_summary_at) if last_summary_at else None,
             thread_id=thread_id,
             patient_id=patient_id,
             phase=CoachPhase(phase),
@@ -131,8 +155,16 @@ class SQLiteThreadRepository(IThreadRepository):
             return self._row_to_thread(dict(row) if row else {})
 
     def save(self, thread: Thread) -> Thread:
+        summary_at = getattr(thread, "last_summary_at", None)
         messages_json = json.dumps(
-            [{"role": m.role.value, "content": m.content} for m in thread.messages]
+            [
+                {
+                    "role": m.role.value,
+                    "content": m.content,
+                    "created_at": m.created_at.isoformat() if getattr(m, "created_at", None) else None,
+                }
+                for m in thread.messages
+            ]
         )
         goal_json = None
         if thread.goal:
@@ -140,11 +172,13 @@ class SQLiteThreadRepository(IThreadRepository):
                 {"description": thread.goal.description, "frequency": thread.goal.frequency}
             )
         checkins_sent_json = json.dumps(getattr(thread, "checkins_sent", []) or [])
+        personality = getattr(thread, "personality", "encouraging") or "encouraging"
+        conv_summary = getattr(thread, "conversation_summary", None)
         with self._conn() as conn:
             conn.execute(
                 """
-                INSERT INTO threads (thread_id, patient_id, phase, messages_json, goal_json, unanswered_count, created_at, last_interaction_at, goal_confirmed_at, last_coach_message_at, checkins_sent_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO threads (thread_id, patient_id, phase, messages_json, goal_json, unanswered_count, created_at, last_interaction_at, goal_confirmed_at, last_coach_message_at, checkins_sent_json, personality, conversation_summary, last_summary_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(thread_id) DO UPDATE SET
                     phase = excluded.phase,
                     messages_json = excluded.messages_json,
@@ -153,7 +187,10 @@ class SQLiteThreadRepository(IThreadRepository):
                     last_interaction_at = excluded.last_interaction_at,
                     goal_confirmed_at = excluded.goal_confirmed_at,
                     last_coach_message_at = excluded.last_coach_message_at,
-                    checkins_sent_json = excluded.checkins_sent_json
+                    checkins_sent_json = excluded.checkins_sent_json,
+                    personality = excluded.personality,
+                    conversation_summary = excluded.conversation_summary,
+                    last_summary_at = excluded.last_summary_at
                 """,
                 (
                     thread.thread_id,
@@ -167,6 +204,9 @@ class SQLiteThreadRepository(IThreadRepository):
                     thread.goal_confirmed_at.isoformat() if getattr(thread, "goal_confirmed_at", None) else None,
                     thread.last_coach_message_at.isoformat() if getattr(thread, "last_coach_message_at", None) else None,
                     checkins_sent_json,
+                    personality,
+                    conv_summary,
+                    summary_at.isoformat() if summary_at else None,
                 ),
             )
         return thread
@@ -219,6 +259,15 @@ class SQLiteThreadRepository(IThreadRepository):
             return
         t.checkins_sent = sent
         self.save(t)
+
+    def list_all(self) -> list[Thread]:
+        with self._conn() as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                """SELECT * FROM threads ORDER BY
+                   COALESCE(last_interaction_at, created_at) DESC"""
+            ).fetchall()
+            return [self._row_to_thread(dict(r)) for r in rows] if rows else []
 
     def list_threads_by_phases(self, phases: list[CoachPhase]) -> list[Thread]:
         phase_vals = [p.value for p in phases]

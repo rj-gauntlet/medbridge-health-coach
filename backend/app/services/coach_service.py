@@ -20,19 +20,21 @@ class CoachService:
         self,
         thread_repo: IThreadRepository,
         consent_service: IConsentService,
+        pro_repo=None,
         safety_classifier: SafetyClassifier | None = None,
     ):
         self.thread_repo = thread_repo
         self.consent_service = consent_service
+        self.pro_repo = pro_repo
         self.safety_classifier = safety_classifier or SafetyClassifier()
         self._graph = None
 
     def _get_graph(self):
         if self._graph is None:
-            self._graph = build_graph()
+            self._graph = build_graph(thread_repo=self.thread_repo, pro_repo=self.pro_repo)
         return self._graph
 
-    def process_message(self, patient_id: str, user_message: str, thread_id: str | None = None) -> dict:
+    def process_message(self, patient_id: str, user_message: str, thread_id: str | None = None, personality: str | None = None) -> dict:
         """
         Process a patient message and return the coach response.
         Returns: {"reply": str, "thread_id": str, "phase": str, "blocked": bool, "error": str | None}
@@ -48,6 +50,9 @@ class CoachService:
 
         thread = self._get_or_create_thread(patient_id, thread_id)
         thread_id = thread.thread_id
+        if personality and personality in ("encouraging", "direct", "calm"):
+            thread.personality = personality
+            self.thread_repo.save(thread)
 
         # DORMANT → RE_ENGAGING when patient returns
         if thread.phase == CoachPhase.DORMANT:
@@ -69,6 +74,7 @@ class CoachService:
                 lc_messages.append(AIMessage(content=m.content))
         lc_messages.append(HumanMessage(content=user_message))
 
+        personality = getattr(thread, "personality", None) or "encouraging"
         agent_state = {
             "messages": lc_messages,
             "phase": thread.phase.value,
@@ -77,6 +83,7 @@ class CoachService:
             "patient_id": patient_id,
             "program_summary": "Knee exercises: stretches, quad sets, heel slides. 3x10 each.",
             "interaction_type": "user_message",
+            "personality": personality,
         }
 
         graph = self._get_graph()
@@ -123,6 +130,7 @@ class CoachService:
 
         # Check for set_goal tool call and persist goal
         new_goal = self._extract_goal_from_result(result)
+
         if new_goal:
             self.thread_repo.update_goal(thread_id, new_goal)
             self.thread_repo.update_phase(thread_id, CoachPhase.ACTIVE)
@@ -195,6 +203,7 @@ class CoachService:
                 lc_messages.append(AIMessage(content=m.content))
         lc_messages.append(HumanMessage(content=f"[Scheduled Day {day} check-in - {tone}]"))
 
+        personality = getattr(thread, "personality", None) or "encouraging"
         agent_state = {
             "messages": lc_messages,
             "phase": thread.phase.value,
@@ -205,6 +214,7 @@ class CoachService:
             "interaction_type": "scheduled_checkin",
             "scheduled_checkin_day": day,
             "tone": tone,
+            "personality": personality,
         }
 
         graph = self._get_graph()
@@ -252,6 +262,7 @@ class CoachService:
                     lc_messages.append(AIMessage(content=m.content))
             lc_messages.append(HumanMessage(content="[Disengagement nudge - no user reply]"))
 
+            personality = getattr(thread, "personality", None) or "encouraging"
             agent_state = {
                 "messages": lc_messages,
                 "phase": thread.phase.value,
@@ -260,6 +271,7 @@ class CoachService:
                 "patient_id": thread.patient_id,
                 "program_summary": "Knee exercises: stretches, quad sets, heel slides. 3x10 each.",
                 "interaction_type": "user_message",
+                "personality": personality,
             }
 
             graph = self._get_graph()
@@ -276,3 +288,23 @@ class CoachService:
                 t.last_coach_message_at = now
                 t.last_interaction_at = now
                 self.thread_repo.save(t)
+
+    def summarize_conversation(self, thread_id: str) -> None:
+        """Generate a brief summary of the conversation for clinicians."""
+        thread = self.thread_repo.get(thread_id)
+        if not thread or len(thread.messages) < 2:
+            return
+        from langchain_openai import ChatOpenAI
+        from app.config import get_settings
+        settings = get_settings()
+        llm = ChatOpenAI(model=settings.openai_model, api_key=settings.openai_api_key, temperature=0.3)
+        recent = thread.messages[-20:]
+        text = "\n".join([f"{m.role.value}: {m.content[:200]}" for m in recent])
+        prompt = f"Summarize this patient-coach conversation in 2-3 sentences for a clinician. Focus on: goal, adherence, concerns, pain/difficulty.\n\n{text}"
+        try:
+            summary = llm.invoke(prompt).content
+            thread.conversation_summary = summary
+            thread.last_summary_at = datetime.utcnow()
+            self.thread_repo.save(thread)
+        except Exception:
+            pass

@@ -65,3 +65,8 @@ class InMemoryThreadRepository(IThreadRepository):
 
     def list_threads_by_phases(self, phases: list[CoachPhase]) -> list[Thread]:
         return [deepcopy(t) for t in self._threads.values() if t.phase in phases]
+
+    def list_all(self) -> list[Thread]:
+        def _sort_key(t: Thread):
+            return (t.last_interaction_at or t.created_at)
+        return [deepcopy(t) for t in sorted(self._threads.values(), key=_sort_key, reverse=True)]

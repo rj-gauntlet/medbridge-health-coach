@@ -65,3 +65,8 @@ class IThreadRepository(ABC):
     def list_threads_by_phases(self, phases: list[CoachPhase]) -> list[Thread]:
         """List threads in the given phases (for scheduler)."""
         pass
+
+    @abstractmethod
+    def list_all(self) -> list[Thread]:
+        """List all threads (for clinician dashboard)."""
+        pass

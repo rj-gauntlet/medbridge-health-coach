@@ -45,8 +45,15 @@ def client(mock_coach_service, mock_thread_repo):
     def override_repo():
         return mock_thread_repo
 
+    from app.api.deps import get_pro_repository
+    from app.repositories.pro_repo import InMemoryProRepository
+
+    def override_pro_repo():
+        return InMemoryProRepository()
+
     app.dependency_overrides[get_coach_service] = override_coach
     app.dependency_overrides[get_thread_repository] = override_repo
+    app.dependency_overrides[get_pro_repository] = override_pro_repo
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
@@ -106,6 +113,7 @@ def test_chat_success(client, mock_coach_service):
         patient_id="p1",
         user_message="Hi",
         thread_id=None,
+        personality=None,
     )
 
 
@@ -119,4 +127,33 @@ def test_chat_with_thread_id(client, mock_coach_service):
         patient_id="p1",
         user_message="Hi",
         thread_id="existing-thread",
+        personality=None,
     )
+
+
+def test_dashboard_empty(client):
+    resp = client.get("/api/dashboard")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "patients" in data
+    assert data["total"] == 0
+    assert data["patients"] == []
+
+
+def test_dashboard_with_patients(client, mock_thread_repo):
+    mock_thread_repo.save(Thread(
+        thread_id="t1", patient_id="p1", phase=CoachPhase.ACTIVE,
+        messages=[Message(role=MessageRole.USER, content="Hi")],
+    ))
+    resp = client.get("/api/dashboard")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 1
+    assert data["patients"][0]["patient_id"] == "p1"
+    assert data["patients"][0]["phase"] == "ACTIVE"
+
+
+def test_pros_empty(client):
+    resp = client.get("/api/pros?thread_id=t1")
+    assert resp.status_code == 200
+    assert resp.json() == []

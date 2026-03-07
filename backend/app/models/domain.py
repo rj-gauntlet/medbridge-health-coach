@@ -1,10 +1,29 @@
-"""Domain models: phase, thread, messages, goal."""
+"""Domain models: phase, thread, messages, goal, PRO, etc."""
 
 from datetime import datetime
 from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, Field
+
+
+class CoachPersonality(str, Enum):
+    """Coach tone/style chosen by patient."""
+
+    ENCOURAGING = "encouraging"
+    DIRECT = "direct"
+    CALM = "calm"
+
+
+class PatientReportedOutcome(BaseModel):
+    """Patient-reported outcome: pain, difficulty, adherence."""
+
+    thread_id: str
+    pain: Optional[int] = None  # 1-10
+    difficulty: Optional[int] = None  # 1-10
+    adherence_rating: Optional[int] = None  # 1-10
+    note: Optional[str] = None
+    recorded_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class CoachPhase(str, Enum):
@@ -53,6 +72,9 @@ class Thread(BaseModel):
     goal_confirmed_at: Optional[datetime] = None  # When patient first set goal (for Day 2/5/7)
     last_coach_message_at: Optional[datetime] = None  # For disengagement backoff
     checkins_sent: list[int] = Field(default_factory=list)  # e.g. [2, 5, 7] for sent days
+    personality: str = CoachPersonality.ENCOURAGING.value
+    conversation_summary: Optional[str] = None
+    last_summary_at: Optional[datetime] = None
 
     @property
     def last_message(self) -> Optional[Message]:

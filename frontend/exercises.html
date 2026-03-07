@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exercise Library | MedBridge AI Coach</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root, [data-theme="light"] {
+      --primary: #B8A060; --surface: #FAF9F6; --container: #fff; --outline: #D9D4C8;
+      --text: #3d3a35; --text-muted: #7a756c;
+    }
+    [data-theme="dark"] {
+      --primary: #D4B876; --surface: #121210; --container: #252320; --outline: #4a453d;
+      --text: #f5f2ec; --text-muted: #a39e94;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Nunito', sans-serif; background: var(--surface); color: var(--text); min-height: 100vh; padding: 1.5rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .sub { color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 560px; margin: 0 auto; }
+    .exercise-card {
+      background: var(--container);
+      border: 1px solid var(--outline);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .exercise-card h2 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .exercise-card .prescription { font-size: 0.85rem; color: var(--primary); font-weight: 600; margin-bottom: 0.75rem; }
+    .exercise-card .instructions { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem; }
+    .exercise-card .attribution { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; }
+    .animation-wrap {
+      width: 100%;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+      border-radius: 0.75rem;
+      overflow: hidden;
+      padding: 0.5rem;
+    }
+    .animation-wrap img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .logo { margin-bottom: 1rem; }
+    .logo img { height: 40px; width: auto; display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <img id="logoImg" src="assets/mockups/assets/logo-black.png" alt="MedBridge" />
+    </div>
+    <h1>Exercise Library</h1>
+    <p class="sub">Your home exercise program. <a href="/">← Back to Chat</a></p>
+
+    <div class="exercise-card">
+      <h2>Knee Extension Stretch</h2>
+      <p class="prescription">3 sets × 10 reps</p>
+      <p class="instructions">Sit with back supported. Start with knee bent (foot behind). Slowly straighten your knee until the leg is extended in front of you. Hold briefly, then return.</p>
+      <div class="animation-wrap">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Knee_extension-CDC_strength_training_for_older_adults.gif" alt="Sitting knee extension" title="CDC Public Domain">
+      </div>
+    </div>
+
+    <div class="exercise-card">
+      <h2>Quad Sets</h2>
+      <p class="prescription">3 sets × 10 reps</p>
+      <p class="instructions">Lie or sit with leg straight. Tighten the muscle on top of your thigh (quad) and push the back of your knee down. Hold 5–10 seconds, then relax. No visible movement—it’s a static squeeze.</p>
+      <div class="animation-wrap">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d9/Quadricep-animation.gif" alt="Quad sets – quadriceps squeeze">
+      </div>
+      <p class="attribution">Animation: Niwadare, <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a></p>
+    </div>
+
+    <div class="exercise-card">
+      <h2>Heel Slides</h2>
+      <p class="prescription">3 sets × 10 reps</p>
+      <p class="instructions">Lie on your back. Keep your thigh still. Slowly slide your heel toward your butt by bending your knee. Slide back out to straight. The heel moves along the floor/surface.</p>
+      <div class="animation-wrap">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/9/9c/Knee_curl-CDC_strength_training_for_older_adults.gif" alt="Heel slide – knee bend" title="CDC Public Domain">
+      </div>
+    </div>
+  </div>
+  <script>
+    (function(){ var t = localStorage.getItem('medbridge-theme');
+      if (!t && window.matchMedia('(prefers-color-scheme: dark)').matches) t = 'dark';
+      t = t || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+      var logo = document.getElementById('logoImg');
+      if (logo) logo.src = t === 'dark' ? 'assets/mockups/assets/logo-white.png' : 'assets/mockups/assets/logo-black.png';
+    })();
+  </script>
+</body>
+</html>

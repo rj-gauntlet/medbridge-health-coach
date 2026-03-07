@@ -13,6 +13,7 @@ router = APIRouter(prefix="/api", tags=["chat"])
 class MessageItem(BaseModel):
     role: str
     content: str
+    created_at: str | None = None  # ISO timestamp for display
 
 
 class GoalItem(BaseModel):
@@ -25,12 +26,15 @@ class ThreadResponse(BaseModel):
     phase: str
     messages: list[MessageItem]
     goal: GoalItem | None = None
+    personality: str | None = None
+    streak_days: int | None = None
 
 
 class ChatRequest(BaseModel):
     patient_id: str
     message: str
     thread_id: str | None = None
+    personality: str | None = None  # "encouraging" | "direct" | "calm"
 
 
 class ChatResponse(BaseModel):
@@ -58,19 +62,41 @@ def get_thread(
     if not thread and patient_id:
         thread = repo.get_by_patient(patient_id)
     if not thread:
-        return ThreadResponse(thread_id=None, phase="PENDING", messages=[], goal=None)
+        return ThreadResponse(thread_id=None, phase="PENDING", messages=[], goal=None, personality=None, streak_days=None)
+    def _to_iso_utc(dt) -> str | None:
+        """Serialize datetime as ISO with Z suffix so client parses as UTC and displays in local time."""
+        if dt is None:
+            return None
+        s = dt.isoformat()
+        if s and not (s.endswith("Z") or "+" in s):
+            s += "Z"
+        return s
+
     messages = [
-        MessageItem(role=m.role.value, content=m.content)
+        MessageItem(
+            role=m.role.value,
+            content=m.content,
+            created_at=_to_iso_utc(getattr(m, "created_at", None)),
+        )
         for m in thread.messages
     ]
     goal_item = None
     if thread.goal:
         goal_item = GoalItem(description=thread.goal.description, frequency=thread.goal.frequency)
+    personality = getattr(thread, "personality", None) or "encouraging"
+    from datetime import datetime
+    streak = 0
+    if thread.last_interaction_at:
+        now = datetime.utcnow()
+        delta = (now - thread.last_interaction_at).days
+        streak = 1 if delta == 0 else 0
     return ThreadResponse(
         thread_id=thread.thread_id,
         phase=thread.phase.value,
         messages=messages,
         goal=goal_item,
+        personality=personality,
+        streak_days=streak if streak else None,
     )
 
 
@@ -88,6 +114,7 @@ def chat(
         patient_id=body.patient_id,
         user_message=body.message,
         thread_id=body.thread_id,
+        personality=body.personality,
     )
     return ChatResponse(
         reply=result["reply"],

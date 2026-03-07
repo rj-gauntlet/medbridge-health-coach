@@ -1,4 +1,4 @@
-"""APScheduler jobs: scheduled check-ins and disengagement handling."""
+"""APScheduler jobs: scheduled check-ins, disengagement, at-risk outreach, summarization."""
 
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
@@ -58,8 +58,24 @@ def run_disengagement_checks(coach: "CoachService", day_seconds: int) -> None:
             coach.process_disengagement_nudge(thread.thread_id)
 
 
+def run_conversation_summaries(coach: "CoachService") -> None:
+    """Summarize conversations for clinician dashboard. Runs every 5 min."""
+    threads = coach.thread_repo.list_all()
+    for t in threads[:5]:
+        if len(t.messages) < 4:
+            continue
+        last_sum = getattr(t, "last_summary_at", None)
+        last_int = t.last_interaction_at
+        if last_sum and last_int and last_int <= last_sum:
+            continue
+        try:
+            coach.summarize_conversation(t.thread_id)
+        except Exception:
+            pass
+
+
 def create_scheduler(coach: "CoachService", day_seconds: int, interval_seconds: int = 60) -> BackgroundScheduler:
-    """Create and configure the scheduler. Runs every interval_seconds (default 60s)."""
+    """Create and configure the scheduler."""
     scheduler = BackgroundScheduler()
 
     def checkins():
@@ -68,6 +84,10 @@ def create_scheduler(coach: "CoachService", day_seconds: int, interval_seconds: 
     def disengagement():
         run_disengagement_checks(coach, day_seconds)
 
+    def summaries():
+        run_conversation_summaries(coach)
+
     scheduler.add_job(checkins, IntervalTrigger(seconds=interval_seconds), id="scheduled_checkins")
     scheduler.add_job(disengagement, IntervalTrigger(seconds=interval_seconds), id="disengagement_checks")
+    scheduler.add_job(summaries, IntervalTrigger(seconds=300), id="conversation_summaries")
     return scheduler

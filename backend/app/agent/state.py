@@ -19,3 +19,4 @@ class AgentState(TypedDict):
     interaction_type: Optional[str]  # "user_message" | "scheduled_checkin" | "re_engagement"
     scheduled_checkin_day: Optional[int]  # 2, 5, or 7
     tone: Optional[str]  # "check-in" | "nudge" | "celebration"
+    personality: Optional[str]  # "encouraging" | "direct" | "calm"

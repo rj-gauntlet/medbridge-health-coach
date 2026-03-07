@@ -11,6 +11,11 @@ Healthcare providers prescribe home exercise programs to patients, but adherence
 - Handles disengagement with exponential backoff and clinician alerts
 - Enforces safety boundaries (clinical content redirect, crisis detection)
 - Operates only when patients have consented via MedBridge Go
+- **PROs** (Patient-Reported Outcomes): pain, difficulty, adherence (1–10) stored and surfaced
+- **Clinician dashboard**: patient overview, phase, at-risk flags, conversation summaries
+- **Streak tracking** and adherence prediction
+- **Coach personality**: Encouraging, Direct, or Calm tone
+- **Exercise library**: Knee extension, quad sets, heel slides with animated demos
 
 ## Tech Stack
 
@@ -21,7 +26,7 @@ Healthcare providers prescribe home exercise programs to patients, but adherence
 | LLM | OpenAI GPT-4o-mini |
 | Storage | SQLite (repository pattern) |
 | Scheduler | APScheduler |
-| Frontend | Web UI (TBD) |
+| Frontend | Vanilla HTML/JS (chat, dashboard, exercise library) |
 
 ## Quick Start
 
@@ -38,12 +43,15 @@ pip install -r requirements.txt
 cp .env.example .env
 # Add your OPENAI_API_KEY to .env
 
-# Run backend (from medbridge/backend)
+# Run backend (from medbridge root)
 cd backend
-uvicorn app.main:app --reload
+..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8080
 ```
 
-Then open http://127.0.0.1:8000 (or your port) in your browser.
+Then open http://127.0.0.1:8080 (or your port) in your browser. You'll see:
+- **Chat** — main coach interface; load a patient, set personality, chat
+- **Exercise Library** (`/exercises`) — home program with animated demos
+- **Clinician Dashboard** (`/dashboard`) — patient overview, expandable details, PROs
 
 **Demo mode** (1 minute = 1 day for scheduling): Add `SCHEDULER_DAY_SECONDS=60` to `.env` to test Day 2/5/7 check-ins and disengagement without waiting real days.
 
@@ -87,6 +95,7 @@ We use **OpenAI GPT-4o-mini** as the primary model for the AI Health Coach. This
 - [Architecture](docs/ARCHITECTURE.md) — High-level design, components, data flow, state model
 - [Project Plan](docs/PROJECT_PLAN.md) — Deliverables, phased priorities, schedule
 - [API Reference](docs/API.md) — REST API endpoints
+- [Demo Script](docs/DEMO_SCRIPT.md) — Step-by-step presentation rehearsal guide
 
 **Interactive API docs** (when server is running): http://127.0.0.1:8080/docs
 

@@ -13,9 +13,18 @@ from app.config import get_settings
 from app.models.domain import CoachPhase
 
 
-def _system_prompt_for_phase(phase: str, program_summary: str | None, scheduled_day: int | None = None, tone: str | None = None) -> str:
+def _system_prompt_for_phase(phase: str, program_summary: str | None, thread_id: str, personality: str = "encouraging", scheduled_day: int | None = None, tone: str | None = None) -> str:
     """Build system prompt based on phase and context."""
-    base = """You are a friendly, supportive AI health coach for MedBridge. You help patients stick to their home exercise program. You are NOT a clinician—never give medical advice, diagnose, or prescribe. If the patient asks about symptoms, medications, or treatment, redirect them to their care team.
+    tone_map = {
+        "encouraging": "Warm, upbeat, and celebratory. Use lots of positive reinforcement.",
+        "direct": "Clear, concise, and action-oriented. Get to the point.",
+        "calm": "Gentle, measured, and reassuring. Avoid hype.",
+    }
+    personality_tone = tone_map.get(personality, tone_map["encouraging"])
+    base = f"""You are a friendly, supportive AI health coach for MedBridge. You help patients stick to their home exercise program. Tone: {personality_tone}
+You are NOT a clinician—never give medical advice, diagnose, or prescribe. Redirect medical questions to their care team.
+
+Current thread_id: {thread_id}. When calling get_adherence_summary, record_pro, or get_streak, always pass thread_id="{thread_id}".
 
 """
     if program_summary:
@@ -31,13 +40,16 @@ def _system_prompt_for_phase(phase: str, program_summary: str | None, scheduled_
 6. When confirmed, call set_goal with their goal description and frequency
 
 Edge cases—handle gracefully:
-- Patient never responds or gives very short answers: Keep messages brief and inviting. Don't repeat yourself excessively.
+- No response or empty message: Briefly acknowledge ("No worries—when you're ready, just share your goal.") and re-invite. Don't repeat long prompts.
+- Very short or vague answers (e.g., "ok", "idk"): Gently ask for specifics: "What would a realistic exercise schedule look like for you—e.g., 3 times a week?"
 - Unrealistic goals (e.g., "10 hours a day", "every hour"): Gently suggest something more achievable. E.g., "That might be tough to sustain—how about starting with 3 times a week?"
-- Patient refuses to set a goal: Respect their choice. Say you're here when they're ready. Do not pressure.
+- Patient refuses to set a goal ("I don't want to", "maybe later"): Respect their choice. Say you're here when they're ready. Do not pressure or guilt.
 - Clinical questions mid-flow (symptoms, meds, diagnosis, treatment): Do NOT answer. Use alert_clinician and redirect: "I'm here for motivation and accountability, not medical advice. Your care team can help with that."
 """
     elif phase == CoachPhase.ACTIVE.value:
-        base += """You are in ACTIVE mode. The patient has set a goal. Keep them motivated, celebrate progress, and gently nudge if needed. Use get_adherence_summary to reference their progress. Stay supportive and non-clinical.
+        base += """You are in ACTIVE mode. The patient has set a goal. Keep them motivated, celebrate progress, and gently nudge if needed.
+Periodically ask: "On a scale of 1-10, how was your pain today?" or "How difficult were the exercises (1-10)?" When they answer, call record_pro to store it.
+Use get_adherence_summary and get_streak to reference progress. Celebrate streaks.
 """
         if scheduled_day and tone:
             base += f"\nThis is a scheduled Day {scheduled_day} check-in. Use a {tone} tone. Reference their goal and encourage them.\n"
@@ -72,9 +84,11 @@ def _create_agent_node(llm, tools):
         messages = state["messages"]
         phase = state.get("phase", CoachPhase.ONBOARDING.value)
         program_summary = state.get("program_summary")
+        thread_id = state.get("thread_id", "")
+        personality = state.get("personality") or "encouraging"
         scheduled_day = state.get("scheduled_checkin_day")
         tone = state.get("tone")
-        sys_prompt = _system_prompt_for_phase(phase, program_summary, scheduled_day, tone)
+        sys_prompt = _system_prompt_for_phase(phase, program_summary, thread_id, personality, scheduled_day, tone)
         full_messages = [SystemMessage(content=sys_prompt)] + list(messages)
         response = llm_with_tools.invoke(full_messages)
         return {"messages": [response]}
@@ -108,15 +122,15 @@ def _extract_goal_from_tool_calls(state: AgentState) -> dict | None:
     return None
 
 
-def build_graph():
+def build_graph(thread_repo=None, pro_repo=None):
     """Build and compile the LangGraph. Returns compiled graph."""
     settings = get_settings()
+    tools = get_coach_tools(thread_repo=thread_repo, pro_repo=pro_repo)
     llm = ChatOpenAI(
         model=settings.openai_model,
         api_key=settings.openai_api_key,
         temperature=0.7,
     )
-    tools = get_coach_tools()
     agent_node, tool_node = _create_agent_node(llm, tools)
 
     graph_builder = StateGraph(AgentState)
