@@ -7,7 +7,7 @@ from app.agent.tools import (
     set_goal,
     set_reminder,
     get_program_summary,
-    alert_clinician,
+    _make_alert_clinician,
     get_coach_tools,
     _make_get_adherence_summary,
     _make_record_pro,
@@ -68,17 +68,20 @@ class TestGetProgramSummary:
 
 class TestAlertClinician:
     def test_normal_urgency(self):
-        result = alert_clinician.invoke({"reason": "Patient unresponsive", "urgency": "normal"})
+        t = _make_alert_clinician(None)
+        result = t.invoke({"reason": "Patient unresponsive", "urgency": "normal"})
         assert "Patient unresponsive" in result
         assert "normal" in result
 
     def test_urgent(self):
-        result = alert_clinician.invoke({"reason": "Crisis signal", "urgency": "high"})
+        t = _make_alert_clinician(None)
+        result = t.invoke({"reason": "Crisis signal", "urgency": "high"})
         assert "Crisis signal" in result
         assert "high" in result
 
     def test_default_urgency(self):
-        result = alert_clinician.invoke({"reason": "Some concern"})
+        t = _make_alert_clinician(None)
+        result = t.invoke({"reason": "Some concern"})
         assert "normal" in result
 
 

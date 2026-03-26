@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <script>
+    (function(){
+      var t = localStorage.getItem('medbridge-theme');
+      if (!t && window.matchMedia('(prefers-color-scheme: dark)').matches) t = 'dark';
+      document.documentElement.setAttribute('data-theme', t || 'light');
+      // If already logged in, skip to chat
+      if (localStorage.getItem('medbridge_patient_id')) {
+        window.location.replace('/');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In | MedBridge AI Health Coach</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root, [data-theme="light"] {
+      --primary: #B8A060;
+      --primary-hover: #A89050;
+      --primary-soft: #E8E2D0;
+      --primary-container: #F5F2E8;
+      --surface: #FAF9F6;
+      --surface-container: #F0EDE6;
+      --surface-container-high: #FFFFFF;
+      --outline: #D9D4C8;
+      --outline-variant: #E8E4DC;
+      --text: #3d3a35;
+      --text-muted: #7a756c;
+      --body-bg: #FAF9F6;
+      --container-bg: #FFFFFF;
+      --container-shadow: 0 4px 24px rgba(61,58,53,0.06);
+      --shadow-sm: 0 1px 3px rgba(61,58,53,0.06);
+      --shadow-md: 0 4px 12px rgba(61,58,53,0.08);
+      --radius: 1.125rem;
+      --radius-sm: 0.875rem;
+      --focus-ring: 0 0 0 3px rgba(184,160,96,0.15);
+      --danger: #C47A6A;
+      --danger-bg: #F5E0E0;
+    }
+    [data-theme="dark"] {
+      --primary: #D4B876;
+      --primary-hover: #E0C888;
+      --primary-soft: #3d3828;
+      --primary-container: #2e2a22;
+      --surface: #1A1917;
+      --surface-container: #1f1d1a;
+      --surface-container-high: #2e2b26;
+      --outline: #4a453d;
+      --outline-variant: #3d3828;
+      --text: #f5f2ec;
+      --text-muted: #a39e94;
+      --body-bg: #121210;
+      --container-bg: #1A1917;
+      --container-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.25);
+      --radius: 1rem;
+      --radius-sm: 0.625rem;
+      --focus-ring: 0 0 0 3px rgba(212,184,118,0.2);
+      --danger: #D4847C;
+      --danger-bg: rgba(212,132,124,0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', -apple-system, sans-serif;
+      background: var(--body-bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 1.5rem;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .login-container {
+      max-width: 420px;
+      width: 100%;
+      background: var(--container-bg);
+      border-radius: 1.25rem;
+      border: 1px solid var(--outline);
+      box-shadow: var(--container-shadow);
+      overflow: hidden;
+      transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .login-header {
+      padding: 2rem 2rem 1.25rem;
+      text-align: center;
+      background: linear-gradient(180deg, var(--primary-container) 0%, var(--container-bg) 100%);
+      border-bottom: 1px solid var(--outline);
+      transition: background 0.3s ease;
+    }
+    .login-header .logo { display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem; }
+    .login-header .logo img { height: 40px; width: auto; }
+    .login-header h2 { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 0.25rem; }
+    .login-header p { font-size: 0.8rem; color: var(--text-muted); }
+
+    .login-form {
+      padding: 1.75rem 2rem 1.5rem;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.4rem;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      border: 1.5px solid var(--outline);
+      border-radius: var(--radius-sm);
+      font-size: 0.92rem;
+      background: var(--surface-container-high);
+      color: var(--text);
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: var(--focus-ring);
+    }
+    .form-group input::placeholder { color: var(--text-muted); }
+
+    .error-msg {
+      display: none;
+      color: var(--danger);
+      background: var(--danger-bg);
+      border-radius: 0.5rem;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    .error-msg.show { display: block; }
+
+    .sign-in-btn {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+    .sign-in-btn:hover {
+      background: var(--primary-hover);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .sign-in-btn:active { transform: translateY(0); }
+
+    .demo-section {
+      padding: 1.25rem 2rem 1.75rem;
+      border-top: 1px solid var(--outline);
+      background: var(--surface-container);
+      transition: background 0.3s ease;
+    }
+    .demo-section h3 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.75rem;
+      text-align: center;
+    }
+    .demo-accounts {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .demo-account {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: 0.5rem;
+      background: var(--surface-container-high);
+      border: 1px solid var(--outline-variant);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 0.8rem;
+    }
+    .demo-account:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+    .demo-account:active { transform: translateY(0); }
+    .demo-account .avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--primary-soft);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.75rem; color: var(--primary);
+      flex-shrink: 0;
+    }
+    .demo-account .info { flex: 1; min-width: 0; }
+    .demo-account .name { font-weight: 700; color: var(--text); }
+    .demo-account .email { color: var(--text-muted); font-size: 0.72rem; }
+    .demo-account .creds { color: var(--text-muted); font-size: 0.7rem; font-family: monospace; white-space: nowrap; }
+
+    .theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      width: 36px; height: 36px;
+      border: 1px solid var(--outline);
+      border-radius: 10px;
+      background: var(--surface-container-high);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .theme-toggle:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .theme-toggle svg { width: 18px; height: 18px; }
+
+    @media (max-width: 480px) {
+      .login-form, .demo-section, .login-header { padding-left: 1.25rem; padding-right: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+  <button type="button" class="theme-toggle" id="themeToggle" title="Toggle theme">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+
+  <div class="login-container">
+    <div class="login-header">
+      <div class="logo">
+        <img id="logoImg" src="assets/mockups/assets/logo-black.png" alt="MedBridge" />
+      </div>
+      <h2>AI Health Coach</h2>
+      <p>Sign in to continue to your exercise program</p>
+    </div>
+
+    <form class="login-form" id="loginForm" autocomplete="off">
+      <div class="error-msg" id="errorMsg">Invalid email or password</div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@medbridge.demo" autofocus />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter password" />
+      </div>
+      <button type="submit" class="sign-in-btn">Sign In</button>
+    </form>
+
+    <div class="demo-section">
+      <h3>Demo Accounts</h3>
+      <div class="demo-accounts" id="demoAccounts"></div>
+    </div>
+  </div>
+
+  <script>
+    const DEMO_USERS = [
+      { name: 'Sarah Johnson',  email: 'sarah@medbridge.demo',      password: 'pass123', patientId: 'patient-001', initials: 'SJ' },
+      { name: 'James Chen',     email: 'james@medbridge.demo',      password: 'pass123', patientId: 'patient-024', initials: 'JC' },
+      { name: 'Maria Garcia',   email: 'maria@medbridge.demo',      password: 'pass123', patientId: 'patient-069', initials: 'MG' },
+      { name: 'Alex Rivera',    email: 'alex@medbridge.demo',       password: 'pass123', patientId: 'patient-999', initials: 'AR' },
+      { name: 'New Patient',    email: 'newpatient@medbridge.demo',  password: 'pass123', patientId: 'patient-new', initials: 'NP' },
+    ];
+
+    // ── Theme ──
+    const themeToggle = document.getElementById('themeToggle');
+    const logoImg = document.getElementById('logoImg');
+    const THEME_KEY = 'medbridge-theme';
+    const MOON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    const SUN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+
+    function getTheme() { return localStorage.getItem(THEME_KEY) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem(THEME_KEY, theme);
+      logoImg.src = theme === 'dark' ? 'assets/mockups/assets/logo-white.png' : 'assets/mockups/assets/logo-black.png';
+      themeToggle.innerHTML = theme === 'dark' ? SUN_SVG : MOON_SVG;
+    }
+    themeToggle.addEventListener('click', () => setTheme(getTheme() === 'dark' ? 'light' : 'dark'));
+    setTheme(getTheme());
+
+    // ── Login Logic ──
+    function loginAs(user) {
+      localStorage.setItem('medbridge_patient_id', user.patientId);
+      localStorage.setItem('medbridge_patient_name', user.name);
+      localStorage.setItem('medbridge_patient_email', user.email);
+      window.location.href = '/';
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      const password = document.getElementById('password').value;
+      const user = DEMO_USERS.find(u => u.email === email && u.password === password);
+      if (user) {
+        loginAs(user);
+      } else {
+        document.getElementById('errorMsg').classList.add('show');
+        document.getElementById('password').value = '';
+        document.getElementById('password').focus();
+      }
+    });
+
+    // Clear error on input
+    document.getElementById('email').addEventListener('input', () => document.getElementById('errorMsg').classList.remove('show'));
+    document.getElementById('password').addEventListener('input', () => document.getElementById('errorMsg').classList.remove('show'));
+
+    // ── Render Demo Account Cards ──
+    const container = document.getElementById('demoAccounts');
+    DEMO_USERS.forEach(user => {
+      const card = document.createElement('div');
+      card.className = 'demo-account';
+      card.innerHTML = `
+        <div class="avatar">${user.initials}</div>
+        <div class="info">
+          <div class="name">${user.name}</div>
+          <div class="email">${user.email}</div>
+        </div>
+        <div class="creds">pass123</div>
+      `;
+      card.addEventListener('click', () => {
+        document.getElementById('email').value = user.email;
+        document.getElementById('password').value = user.password;
+        loginAs(user);
+      });
+      container.appendChild(card);
+    });
+  </script>
+</body>
+</html>

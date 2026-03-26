@@ -3,12 +3,18 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.api.deps import get_pro_repository, get_thread_repository
+from app.api.deps import get_alert_repository, get_pro_repository, get_thread_repository
 from app.models.domain import CoachPhase
-from app.repositories.pro_repo import IProRepository
+from app.repositories.pro_repo import IAlertRepository, IProRepository
 from app.repositories.interfaces import IThreadRepository
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
+
+
+class AlertItem(BaseModel):
+    reason: str
+    urgency: str
+    created_at: str
 
 
 class PatientSummary(BaseModel):
@@ -20,6 +26,7 @@ class PatientSummary(BaseModel):
     unanswered_count: int
     at_risk: bool
     conversation_summary: str | None
+    alerts: list[AlertItem] = []
 
 
 class DashboardResponse(BaseModel):
@@ -30,6 +37,7 @@ class DashboardResponse(BaseModel):
 @router.get("/dashboard", response_model=DashboardResponse)
 def get_dashboard(
     repo: IThreadRepository = Depends(get_thread_repository),
+    alert_repo: IAlertRepository = Depends(get_alert_repository),
 ) -> DashboardResponse:
     """Clinician dashboard: all patients with phase, adherence, alerts."""
     threads = repo.list_all()
@@ -42,6 +50,7 @@ def get_dashboard(
             and t.last_coach_message_at
             and (now - t.last_coach_message_at).days >= 2
         )
+        patient_alerts = alert_repo.list_by_patient(t.patient_id, limit=5)
         patients.append(
             PatientSummary(
                 thread_id=t.thread_id,
@@ -52,9 +61,29 @@ def get_dashboard(
                 unanswered_count=t.unanswered_count,
                 at_risk=at_risk,
                 conversation_summary=getattr(t, "conversation_summary", None),
+                alerts=[
+                    AlertItem(reason=a.reason, urgency=a.urgency, created_at=a.created_at.isoformat())
+                    for a in patient_alerts
+                ],
             )
         )
     return DashboardResponse(patients=patients, total=len(patients))
+
+
+@router.get("/alerts")
+def get_alerts(
+    patient_id: str | None = None,
+    alert_repo: IAlertRepository = Depends(get_alert_repository),
+) -> list[AlertItem]:
+    """Get alert history, optionally filtered by patient."""
+    if patient_id:
+        alerts = alert_repo.list_by_patient(patient_id, limit=50)
+    else:
+        alerts = alert_repo.list_all(limit=100)
+    return [
+        AlertItem(reason=a.reason, urgency=a.urgency, created_at=a.created_at.isoformat())
+        for a in alerts
+    ]
 
 
 class ProItem(BaseModel):

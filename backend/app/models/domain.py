@@ -81,5 +81,16 @@ class Thread(BaseModel):
         return self.messages[-1] if self.messages else None
 
 
+class ClinicianAlert(BaseModel):
+    """Alert sent to the care team (crisis, clinical question, disengagement)."""
+
+    id: Optional[int] = None
+    thread_id: str
+    patient_id: str
+    reason: str
+    urgency: str = "normal"  # "normal" | "high"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 # Alias for LangGraph state compatibility
 ThreadState = dict

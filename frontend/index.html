@@ -15,6 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     :root, [data-theme="light"] {
       --primary: #B8A060;
@@ -343,6 +344,47 @@
       margin-top: 0.3rem;
     }
     .message.typing { opacity: 0.6; font-style: italic; }
+
+    /* ── Markdown in coach bubbles ── */
+    .message.coach .md-content p { margin: 0 0 0.5em; }
+    .message.coach .md-content p:last-child { margin-bottom: 0; }
+    .message.coach .md-content strong { font-weight: 700; }
+    .message.coach .md-content em { font-style: italic; }
+    .message.coach .md-content ul, .message.coach .md-content ol {
+      margin: 0.35em 0 0.5em 1.3em;
+      padding: 0;
+    }
+    .message.coach .md-content li { margin-bottom: 0.2em; }
+    .message.coach .md-content li::marker { color: var(--primary); }
+    .message.coach .md-content h1,
+    .message.coach .md-content h2,
+    .message.coach .md-content h3 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      margin: 0.6em 0 0.3em;
+      color: var(--text);
+    }
+    .message.coach .md-content h1:first-child,
+    .message.coach .md-content h2:first-child,
+    .message.coach .md-content h3:first-child { margin-top: 0; }
+    .message.coach .md-content code {
+      background: var(--surface-container);
+      padding: 0.15em 0.35em;
+      border-radius: 4px;
+      font-size: 0.85em;
+      font-family: 'SF Mono', 'Consolas', monospace;
+    }
+    .message.coach .md-content blockquote {
+      border-left: 3px solid var(--primary);
+      margin: 0.4em 0;
+      padding: 0.3em 0 0.3em 0.75em;
+      color: var(--text-muted);
+    }
+    .message.coach .md-content hr {
+      border: none;
+      border-top: 1px solid var(--outline);
+      margin: 0.6em 0;
+    }
     .empty-state {
       text-align: center;
       padding: 2rem 1rem;
@@ -441,13 +483,13 @@
     </header>
 
     <div class="patient-row">
-      <input type="text" id="patientId" placeholder="Patient ID" value="patient-001" />
+      <span class="welcome-name" id="welcomeName" style="font-weight:700;font-size:0.88rem;flex:1;">Hi</span>
       <select id="personalitySelect" class="personality-select" title="Coach style">
         <option value="encouraging">Encouraging</option>
         <option value="direct">Direct</option>
         <option value="calm">Calm</option>
       </select>
-      <button type="button" class="load-btn" id="loadBtn">Load</button>
+      <button type="button" class="load-btn" id="logoutBtn" style="background:var(--surface-container-high);color:var(--text-muted);border:1.5px solid var(--outline);font-size:0.78rem;" title="Sign out">Sign Out</button>
     </div>
 
     <div class="status-bar" id="statusBar" style="display: none;">
@@ -468,13 +510,29 @@
   </div>
 
   <script>
+    // ── Auth Guard ──
+    const storedPatientId = localStorage.getItem('medbridge_patient_id');
+    const storedPatientName = localStorage.getItem('medbridge_patient_name');
+    if (!storedPatientId) { window.location.replace('/login'); }
+
     const chatEl = document.getElementById('chat');
     const messageInput = document.getElementById('messageInput');
     const sendBtn = document.getElementById('sendBtn');
-    const patientIdEl = document.getElementById('patientId');
-    const loadBtn = document.getElementById('loadBtn');
     const themeToggle = document.getElementById('themeToggle');
     const logoImg = document.getElementById('logoImg');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const welcomeName = document.getElementById('welcomeName');
+
+    if (welcomeName && storedPatientName) {
+      welcomeName.textContent = 'Hi, ' + storedPatientName.split(' ')[0];
+    }
+
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('medbridge_patient_id');
+      localStorage.removeItem('medbridge_patient_name');
+      localStorage.removeItem('medbridge_patient_email');
+      window.location.replace('/login');
+    });
 
     const THEME_KEY = 'medbridge-theme';
 
@@ -519,6 +577,16 @@
       } catch (e) { return ''; }
     }
 
+    // Configure marked for clean output
+    if (typeof marked !== 'undefined') {
+      marked.setOptions({ breaks: true, gfm: true });
+    }
+
+    function renderMarkdown(raw) {
+      if (typeof marked === 'undefined') return raw;
+      try { return marked.parse(raw); } catch (e) { return raw; }
+    }
+
     function addMessage(content, role, createdAt) {
       const div = document.createElement('div');
       div.className = `message ${role}`;
@@ -531,7 +599,12 @@
       }
       div.appendChild(roleSpan);
       const text = document.createElement('div');
-      text.textContent = content;
+      if (role === 'coach') {
+        text.className = 'md-content';
+        text.innerHTML = renderMarkdown(content);
+      } else {
+        text.textContent = content;
+      }
       div.appendChild(text);
       if (createdAt) {
         const timeSpan = document.createElement('div');
@@ -617,7 +690,7 @@
     }
 
     async function loadThread() {
-      const patientId = patientIdEl.value.trim() || 'patient-001';
+      const patientId = localStorage.getItem('medbridge_patient_id') || 'patient-001';
       try {
         const url = `/api/thread?patient_id=${encodeURIComponent(patientId)}` +
           (threadId ? `&thread_id=${encodeURIComponent(threadId)}` : '');
@@ -636,15 +709,13 @@
       pollInterval = setInterval(loadThread, 30000);
     }
 
-    loadBtn.addEventListener('click', () => { threadId = null; loadThread(); startPolling(); });
-    patientIdEl.addEventListener('blur', () => { threadId = null; loadThread(); });
     window.addEventListener('focus', loadThread);
     loadThread();
     startPolling();
 
     async function send() {
       const content = messageInput.value.trim();
-      const patientId = patientIdEl.value.trim() || 'patient-001';
+      const patientId = localStorage.getItem('medbridge_patient_id') || 'patient-001';
       if (!content) return;
 
       addMessage(content, 'user', new Date().toISOString());

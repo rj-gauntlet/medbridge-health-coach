@@ -182,6 +182,7 @@
     .phase.pending::before { background: var(--text-muted); }
 
     .at-risk { color: var(--danger); font-weight: 700; }
+    .alert-normal { color: var(--warning); font-weight: 600; }
 
     /* ── Rows ── */
     .patient-row { cursor: pointer; transition: background 0.15s ease; }
@@ -268,7 +269,7 @@
       </svg>
     </button>
   </div>
-  <p class="page-subtitle">Patient overview: phase, adherence, and conversation summaries. Click a row to expand details. <a href="/">← Back to Chat</a></p>
+  <p class="page-subtitle">Patient overview: phase, adherence, and conversation summaries. Click a row to expand details. <a href="/">← Back to Chat</a> · <a href="#" id="logoutLink" style="color:var(--text-muted)">Sign Out</a></p>
   <div class="container">
     <table>
       <thead>
@@ -280,6 +281,16 @@
   </div>
 
   <script>
+    // Auth guard
+    if (!localStorage.getItem('medbridge_patient_id')) { window.location.replace('/login'); }
+    document.getElementById('logoutLink')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('medbridge_patient_id');
+      localStorage.removeItem('medbridge_patient_name');
+      localStorage.removeItem('medbridge_patient_email');
+      window.location.replace('/login');
+    });
+
     const THEME_KEY = 'medbridge-theme';
     const themeToggle = document.getElementById('themeToggle');
     const logoImg = document.getElementById('logoImg');
@@ -328,6 +339,14 @@
               Last active: ${p.last_interaction_at ? new Date(p.last_interaction_at).toLocaleString() : '—'}<br>
               Unanswered coach messages: ${p.unanswered_count}<br>
               ${p.at_risk ? '<span class="at-risk">⚠ At risk</span>' : ''}</p>
+            </div>
+            <div class="drawer-section">
+              <h4>Clinician Alerts</h4>
+              ${!p.alerts || p.alerts.length === 0
+                ? '<p>No alerts.</p>'
+                : '<ul>' + p.alerts.map(a =>
+                    '<li><span class="' + (a.urgency === 'high' ? 'at-risk' : 'alert-normal') + '">' + (a.urgency === 'high' ? '🚨 HIGH' : '⚠ Normal') + '</span> ' + a.reason + ' <span style="color:var(--text-muted);font-size:0.75rem">' + (a.created_at ? new Date(a.created_at).toLocaleString() : '') + '</span></li>'
+                  ).join('') + '</ul>'}
             </div>
             <div class="drawer-section">
               <h4>Patient-Reported Outcomes</h4>
@@ -384,7 +403,11 @@
             <td><span class="phase ${phaseClass}">${p.phase}</span></td>
             <td>${(p.goal || '—').slice(0, 40)}${(p.goal || '').length > 40 ? '…' : ''}</td>
             <td>${p.last_interaction_at ? new Date(p.last_interaction_at).toLocaleDateString() : '—'}</td>
-            <td>${p.at_risk ? '<span class="at-risk">At risk</span> ' : ''}${p.unanswered_count > 0 ? p.unanswered_count + ' unanswered' : '—'}</td>
+            <td>${
+              (p.alerts && p.alerts.length > 0)
+                ? p.alerts.map(a => '<span class="' + (a.urgency === 'high' ? 'at-risk' : 'alert-normal') + '">' + (a.urgency === 'high' ? '🚨 ' : '⚠ ') + a.reason.slice(0, 35) + (a.reason.length > 35 ? '…' : '') + '</span>').join('<br>')
+                : (p.at_risk ? '<span class="at-risk">At risk</span> ' : '') + (p.unanswered_count > 0 ? p.unanswered_count + ' unanswered' : '—')
+            }</td>
             <td><button type="button" class="expand-btn">Details</button></td>
           `;
           tr.addEventListener('click', (e) => { if (!e.target.classList.contains('expand-btn')) toggleDrawer(p); });

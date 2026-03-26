@@ -28,24 +28,27 @@ from app.services.safety_classifier import SafetyClassifier
 DAY_SECONDS = 86400  # real day
 
 
-def _make_coach(repo: InMemoryThreadRepository | None = None) -> tuple[CoachService, InMemoryThreadRepository]:
+def _make_coach(repo: InMemoryThreadRepository | None = None) -> tuple:
     """Build a CoachService with mocked graph."""
+    from app.repositories.pro_repo import InMemoryAlertRepository
     repo = repo or InMemoryThreadRepository()
     pro_repo = InMemoryProRepository()
+    alert_repo = InMemoryAlertRepository()
     consent = MockConsentService(default_allowed=True)
     svc = CoachService(
         thread_repo=repo,
         consent_service=consent,
         pro_repo=pro_repo,
+        alert_repo=alert_repo,
         safety_classifier=SafetyClassifier(),
     )
-    # Mock graph to return safe reply
+    # Mock _get_graph to return safe reply without hitting OpenAI
     mock_graph = MagicMock()
     mock_graph.invoke.return_value = {
         "messages": [AIMessage(content="Scheduled check-in: how are your exercises going?")]
     }
-    svc._graph = mock_graph
-    return svc, repo
+    svc._get_graph = MagicMock(return_value=mock_graph)
+    return svc, repo, alert_repo
 
 
 def _make_active_thread(
@@ -82,7 +85,7 @@ def _make_active_thread(
 
 class TestScheduledCheckins:
     def test_day2_checkin_fires_when_due(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(goal_confirmed_days_ago=3)
         repo.save(thread)
 
@@ -92,7 +95,7 @@ class TestScheduledCheckins:
         assert 2 in updated.checkins_sent
 
     def test_day5_checkin_fires(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(goal_confirmed_days_ago=6, checkins_sent=[2])
         repo.save(thread)
 
@@ -102,7 +105,7 @@ class TestScheduledCheckins:
         assert 5 in updated.checkins_sent
 
     def test_day7_checkin_fires(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(goal_confirmed_days_ago=8, checkins_sent=[2, 5])
         repo.save(thread)
 
@@ -113,7 +116,7 @@ class TestScheduledCheckins:
 
     def test_checkin_not_sent_before_due(self):
         """Day 2 check-in should NOT fire if only 1 day has passed."""
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(goal_confirmed_days_ago=1)
         repo.save(thread)
 
@@ -124,7 +127,7 @@ class TestScheduledCheckins:
 
     def test_checkin_not_duplicated(self):
         """Already-sent check-ins should not re-fire."""
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(goal_confirmed_days_ago=10, checkins_sent=[2, 5, 7])
         repo.save(thread)
 
@@ -134,7 +137,7 @@ class TestScheduledCheckins:
         assert updated.checkins_sent == [2, 5, 7]
 
     def test_skips_thread_without_goal(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = Thread(
             thread_id="t-no-goal",
             patient_id="p1",
@@ -148,7 +151,7 @@ class TestScheduledCheckins:
         assert updated.checkins_sent == []
 
     def test_skips_non_active_phase(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(goal_confirmed_days_ago=3, phase=CoachPhase.ONBOARDING)
         repo.save(thread)
 
@@ -158,11 +161,11 @@ class TestScheduledCheckins:
 
     def test_tone_mapping(self):
         """Verify Day 2 → check-in, Day 5 → nudge, Day 7 → celebration tones."""
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         # We test via process_scheduled_checkin directly to inspect the graph call
         thread = _make_active_thread(goal_confirmed_days_ago=3)
         repo.save(thread)
-        mock_graph = svc._graph
+        mock_graph = svc._get_graph()
 
         svc.process_scheduled_checkin("t1", 2)
         call_state = mock_graph.invoke.call_args[0][0]
@@ -186,7 +189,7 @@ class TestScheduledCheckins:
         assert call_state["tone"] == "celebration"
 
     def test_checkin_message_persisted(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(goal_confirmed_days_ago=3)
         repo.save(thread)
 
@@ -203,7 +206,7 @@ class TestScheduledCheckins:
 
 class TestDisengagement:
     def test_first_nudge_after_1_day(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(
             unanswered_count=0,
             last_coach_days_ago=2,  # 2 days since last coach msg (> 1 day backoff)
@@ -218,7 +221,7 @@ class TestDisengagement:
         assert updated.unanswered_count == 1
 
     def test_second_nudge_after_2_more_days(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(
             unanswered_count=1,
             last_coach_days_ago=3,  # > 2 day backoff for 2nd nudge
@@ -232,7 +235,7 @@ class TestDisengagement:
         assert updated.unanswered_count == 2
 
     def test_third_unanswered_triggers_dormant(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(
             unanswered_count=2,
             last_coach_days_ago=4,  # > 3 day backoff for 3rd
@@ -247,7 +250,7 @@ class TestDisengagement:
         assert updated.unanswered_count == 3
 
     def test_dormant_transition_sends_final_message(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(
             unanswered_count=2,
             last_coach_days_ago=4,
@@ -266,7 +269,7 @@ class TestDisengagement:
 
     def test_no_nudge_if_user_replied(self):
         """If last message is from user, no disengagement needed."""
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(
             unanswered_count=0,
             last_coach_days_ago=5,
@@ -281,7 +284,7 @@ class TestDisengagement:
         assert updated.unanswered_count == 0  # unchanged
 
     def test_no_nudge_before_backoff_period(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(
             unanswered_count=0,
             last_coach_days_ago=0,  # Just messaged — too early for nudge
@@ -295,7 +298,7 @@ class TestDisengagement:
         assert updated.unanswered_count == 0
 
     def test_already_dormant_skipped(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(
             unanswered_count=3,
             last_coach_days_ago=10,
@@ -311,8 +314,8 @@ class TestDisengagement:
         assert updated.unanswered_count == 3
 
     def test_clinician_alert_on_dormant_transition(self):
-        """alert_clinician should be called when transitioning to DORMANT."""
-        svc, repo = _make_coach()
+        """alert_repo.add() should be called when transitioning to DORMANT."""
+        svc, repo, alert_repo = _make_coach()
         thread = _make_active_thread(
             unanswered_count=2,
             last_coach_days_ago=4,
@@ -320,12 +323,14 @@ class TestDisengagement:
         thread.messages.append(Message(role=MessageRole.ASSISTANT, content="Nudge"))
         repo.save(thread)
 
-        with patch("app.agent.tools.alert_clinician") as mock_alert:
-            mock_alert.invoke = MagicMock(return_value="Alerted")
-            svc.process_disengagement_nudge("t1")
+        svc.process_disengagement_nudge("t1")
 
         updated = repo.get("t1")
         assert updated.phase == CoachPhase.DORMANT
+        # Verify alert was persisted
+        alerts = alert_repo.list_by_patient("p1")
+        assert len(alerts) == 1
+        assert "not responded" in alerts[0].reason
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -334,7 +339,7 @@ class TestDisengagement:
 
 class TestConversationSummaries:
     def test_summary_generated_for_active_thread(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = _make_active_thread(goal_confirmed_days_ago=3)
         # Add enough messages
         for i in range(6):
@@ -357,7 +362,7 @@ class TestConversationSummaries:
         assert updated.last_summary_at is not None
 
     def test_summary_skipped_for_short_thread(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         thread = Thread(
             thread_id="t-short",
             patient_id="p1",
@@ -372,7 +377,7 @@ class TestConversationSummaries:
         assert updated.conversation_summary is None
 
     def test_run_conversation_summaries_skips_already_summarized(self):
-        svc, repo = _make_coach()
+        svc, repo, *_ = _make_coach()
         now = datetime.utcnow()
         thread = _make_active_thread()
         for i in range(6):
@@ -393,7 +398,7 @@ class TestConversationSummaries:
 
 class TestSchedulerCreation:
     def test_creates_three_jobs(self):
-        svc, _ = _make_coach()
+        svc, _, *__ = _make_coach()
         scheduler = create_scheduler(svc, DAY_SECONDS, interval_seconds=60)
         jobs = scheduler.get_jobs()
         job_ids = {j.id for j in jobs}

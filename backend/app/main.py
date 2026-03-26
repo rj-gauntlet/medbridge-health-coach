@@ -75,3 +75,7 @@ if FRONTEND_DIR.exists():
     @app.get("/exercises")
     def exercises():
         return FileResponse(FRONTEND_DIR / "exercises.html")
+
+    @app.get("/login")
+    def login():
+        return FileResponse(FRONTEND_DIR / "login.html")

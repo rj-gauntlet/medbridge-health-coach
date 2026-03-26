@@ -44,7 +44,7 @@ def _make_service(
         pro_repo=pro_repo,
         safety_classifier=SafetyClassifier(),
     )
-    service._graph = mock_graph
+    service._get_graph = MagicMock(return_value=mock_graph)
     return service, repo, pro_repo, mock_graph
 
 

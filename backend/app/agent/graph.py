@@ -122,10 +122,10 @@ def _extract_goal_from_tool_calls(state: AgentState) -> dict | None:
     return None
 
 
-def build_graph(thread_repo=None, pro_repo=None):
+def build_graph(thread_repo=None, pro_repo=None, alert_repo=None, thread_id: str = "", patient_id: str = ""):
     """Build and compile the LangGraph. Returns compiled graph."""
     settings = get_settings()
-    tools = get_coach_tools(thread_repo=thread_repo, pro_repo=pro_repo)
+    tools = get_coach_tools(thread_repo=thread_repo, pro_repo=pro_repo, alert_repo=alert_repo, thread_id=thread_id, patient_id=patient_id)
     llm = ChatOpenAI(
         model=settings.openai_model,
         api_key=settings.openai_api_key,

@@ -92,13 +92,23 @@ def get_program_summary() -> str:
     return "Your program includes: knee extension stretches (3x10), quad sets (3x10), heel slides (3x10). Patients can view animated demos at /exercises. Perform as prescribed."
 
 
-@tool
-def alert_clinician(reason: str, urgency: str = "normal") -> str:
-    """Alert the care team. Use for: clinical questions, crisis, or 3+ unanswered messages."""
-    return f"Clinician alerted: {reason} (urgency: {urgency})"
+def _make_alert_clinician(alert_repo, thread_id: str = "", patient_id: str = ""):
+    @tool
+    def alert_clinician(reason: str, urgency: str = "normal") -> str:
+        """Alert the care team. Use for: clinical questions, crisis, or 3+ unanswered messages."""
+        if alert_repo:
+            from app.models.domain import ClinicianAlert
+            alert_repo.add(ClinicianAlert(
+                thread_id=thread_id,
+                patient_id=patient_id,
+                reason=reason,
+                urgency=urgency,
+            ))
+        return f"Clinician alerted: {reason} (urgency: {urgency})"
+    return alert_clinician
 
 
-def get_coach_tools(thread_repo: "IThreadRepository | None" = None, pro_repo: "IProRepository | None" = None):
+def get_coach_tools(thread_repo: "IThreadRepository | None" = None, pro_repo: "IProRepository | None" = None, alert_repo=None, thread_id: str = "", patient_id: str = ""):
     """Return tools for the coach LLM."""
     return [
         set_goal,
@@ -107,5 +117,5 @@ def get_coach_tools(thread_repo: "IThreadRepository | None" = None, pro_repo: "I
         _make_get_adherence_summary(pro_repo),
         _make_record_pro(pro_repo),
         _make_get_streak(thread_repo),
-        alert_clinician,
+        _make_alert_clinician(alert_repo, thread_id, patient_id),
     ]

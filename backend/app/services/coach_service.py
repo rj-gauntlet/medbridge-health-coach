@@ -21,18 +21,19 @@ class CoachService:
         thread_repo: IThreadRepository,
         consent_service: IConsentService,
         pro_repo=None,
+        alert_repo=None,
         safety_classifier: SafetyClassifier | None = None,
     ):
         self.thread_repo = thread_repo
         self.consent_service = consent_service
         self.pro_repo = pro_repo
+        self.alert_repo = alert_repo
         self.safety_classifier = safety_classifier or SafetyClassifier()
         self._graph = None
 
-    def _get_graph(self):
-        if self._graph is None:
-            self._graph = build_graph(thread_repo=self.thread_repo, pro_repo=self.pro_repo)
-        return self._graph
+    def _get_graph(self, thread_id: str = "", patient_id: str = ""):
+        # Rebuild graph each time to pass thread context to alert tool closure
+        return build_graph(thread_repo=self.thread_repo, pro_repo=self.pro_repo, alert_repo=self.alert_repo, thread_id=thread_id, patient_id=patient_id)
 
     def process_message(self, patient_id: str, user_message: str, thread_id: str | None = None, personality: str | None = None) -> dict:
         """
@@ -86,7 +87,7 @@ class CoachService:
             "personality": personality,
         }
 
-        graph = self._get_graph()
+        graph = self._get_graph(thread_id=thread_id, patient_id=patient_id)
         result = graph.invoke(agent_state)
 
         # Extract assistant reply from last AI message
@@ -217,7 +218,7 @@ class CoachService:
             "personality": personality,
         }
 
-        graph = self._get_graph()
+        graph = self._get_graph(thread_id=thread_id, patient_id=thread.patient_id)
         result = graph.invoke(agent_state)
         reply = self._extract_reply(result.get("messages", []))
         if not reply:
@@ -245,8 +246,14 @@ class CoachService:
         next_count = thread.unanswered_count + 1
         if next_count >= 3:
             # Alert clinician and transition to DORMANT
-            from app.agent.tools import alert_clinician
-            alert_clinician.invoke({"reason": "Patient has not responded after 3 coach messages", "urgency": "normal"})
+            if self.alert_repo:
+                from app.models.domain import ClinicianAlert
+                self.alert_repo.add(ClinicianAlert(
+                    thread_id=thread_id,
+                    patient_id=thread.patient_id,
+                    reason="Patient has not responded after 3 coach messages",
+                    urgency="normal",
+                ))
             self.thread_repo.update_unanswered_count(thread_id, 3)
             self.thread_repo.update_phase(thread_id, CoachPhase.DORMANT)
             # Add a final message
@@ -274,7 +281,7 @@ class CoachService:
                 "personality": personality,
             }
 
-            graph = self._get_graph()
+            graph = self._get_graph(thread_id=thread_id, patient_id=thread.patient_id)
             result = graph.invoke(agent_state)
             reply = self._extract_reply(result.get("messages", []))
             if not reply:

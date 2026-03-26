@@ -186,7 +186,7 @@
       </svg>
     </button>
   </div>
-  <p class="sub">Your home exercise program. <a href="/">← Back to Chat</a></p>
+  <p class="sub">Your home exercise program. <a href="/">← Back to Chat</a> · <a href="#" id="logoutLink" style="color:var(--text-muted)">Sign Out</a></p>
 
   <div class="container">
     <div class="exercise-card">
@@ -219,6 +219,16 @@
   </div>
 
   <script>
+    // Auth guard
+    if (!localStorage.getItem('medbridge_patient_id')) { window.location.replace('/login'); }
+    document.getElementById('logoutLink')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('medbridge_patient_id');
+      localStorage.removeItem('medbridge_patient_name');
+      localStorage.removeItem('medbridge_patient_email');
+      window.location.replace('/login');
+    });
+
     const THEME_KEY = 'medbridge-theme';
     const themeToggle = document.getElementById('themeToggle');
     const logoImg = document.getElementById('logoImg');

@@ -6,7 +6,7 @@ from fastapi import Depends
 
 from app.config import get_settings
 from app.repositories.interfaces import IThreadRepository
-from app.repositories.pro_repo import IProRepository, SQLiteProRepository
+from app.repositories.pro_repo import IAlertRepository, IProRepository, SQLiteAlertRepository, SQLiteProRepository
 from app.repositories.sqlite_repo import SQLiteThreadRepository
 from app.services.coach_service import CoachService
 from app.services.consent_service import IConsentService, MockConsentService
@@ -23,6 +23,11 @@ def get_pro_repository() -> IProRepository:
     return SQLiteProRepository(settings.database_url)
 
 
+def get_alert_repository() -> IAlertRepository:
+    settings = get_settings()
+    return SQLiteAlertRepository(settings.database_url)
+
+
 def get_consent_service() -> IConsentService:
     return MockConsentService(default_allowed=True)
 
@@ -31,10 +36,12 @@ def get_coach_service(
     thread_repo: IThreadRepository = Depends(get_thread_repository),
     consent_service: IConsentService = Depends(get_consent_service),
     pro_repo: IProRepository = Depends(get_pro_repository),
+    alert_repo: IAlertRepository = Depends(get_alert_repository),
 ) -> CoachService:
     return CoachService(
         thread_repo=thread_repo,
         consent_service=consent_service,
         pro_repo=pro_repo,
+        alert_repo=alert_repo,
         safety_classifier=SafetyClassifier(),
     )
