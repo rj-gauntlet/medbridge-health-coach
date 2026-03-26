@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedBridge — Refined Current</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="light"] {
+    --primary: #B8A060;
+    --primary-hover: #A89050;
+    --primary-soft: #E8E2D0;
+    --primary-container: #F5F2E8;
+    --surface: #FAF9F6;
+    --surface-container: #F0EDE6;
+    --surface-container-high: #FFFFFF;
+    --outline: #D9D4C8;
+    --outline-variant: #E8E4DC;
+    --text: #3d3a35;
+    --text-muted: #7a756c;
+    --user-bubble: #5c574d;
+    --coach-bubble: #FFFFFF;
+    --accent-warm: #D4B896;
+    --body-bg: #FAF9F6;
+    --container-bg: #FFFFFF;
+    --container-shadow: 0 4px 24px rgba(61,58,53,0.06);
+    --shadow-sm: 0 1px 3px rgba(61,58,53,0.06);
+    --shadow-md: 0 4px 12px rgba(61,58,53,0.08);
+    --shadow-lg: 0 8px 30px rgba(61,58,53,0.1);
+    --shadow-hover: 0 6px 20px rgba(61,58,53,0.12);
+    --radius: 1.125rem;
+    --radius-sm: 0.875rem;
+    --success: #6B9E6B;
+    --success-bg: #E8F0E8;
+    --warning: #C4956A;
+    --warning-bg: #F5EBE0;
+    --danger: #C47A6A;
+    --danger-bg: #F5E0E0;
+  }
+  [data-theme="dark"] {
+    --primary: #D4B876;
+    --primary-hover: #E0C888;
+    --primary-soft: #3d3828;
+    --primary-container: #2e2a22;
+    --surface: #1A1917;
+    --surface-container: #1f1d1a;
+    --surface-container-high: #2e2b26;
+    --outline: #4a453d;
+    --outline-variant: #3d3828;
+    --text: #f5f2ec;
+    --text-muted: #a39e94;
+    --user-bubble: #D4B876;
+    --coach-bubble: #2e2b26;
+    --accent-warm: #5c5544;
+    --body-bg: #121210;
+    --container-bg: #1A1917;
+    --container-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.25);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.35);
+    --shadow-hover: 0 6px 20px rgba(0,0,0,0.4);
+    --radius: 1rem;
+    --radius-sm: 0.625rem;
+    --success: #8BC98B;
+    --success-bg: rgba(100,180,100,0.15);
+    --warning: #D4B876;
+    --warning-bg: rgba(212,184,118,0.15);
+    --danger: #D4847C;
+    --danger-bg: rgba(212,132,124,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', -apple-system, sans-serif;
+    background: var(--body-bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  .container {
+    max-width: 600px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 2rem);
+    min-height: 400px;
+    background: var(--container-bg);
+    border-radius: 1.25rem;
+    border: 1px solid var(--outline);
+    box-shadow: var(--container-shadow);
+    overflow: hidden;
+    transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 1.25rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--outline);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: linear-gradient(180deg, var(--primary-container) 0%, var(--container-bg) 100%);
+    transition: background 0.3s ease;
+  }
+
+  .logo-icon {
+    flex-shrink: 0;
+  }
+  .logo-icon img {
+    height: 40px;
+    width: auto;
+    display: block;
+  }
+
+  header .header-text { flex: 1; min-width: 0; }
+  header h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
+  header p { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem; }
+  header a { color: var(--primary); text-decoration: none; font-weight: 600; }
+  header a:hover { text-decoration: underline; }
+
+  .theme-toggle {
+    width: 36px; height: 36px;
+    border: 1px solid var(--outline);
+    border-radius: 10px;
+    background: var(--surface-container-high);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+  }
+  .theme-toggle:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+  .theme-toggle svg { width: 18px; height: 18px; }
+
+  /* ── Patient Row ── */
+  .patient-row {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--surface-container);
+    border-bottom: 1px solid var(--outline);
+    transition: background 0.3s ease;
+  }
+  .patient-row input {
+    flex: 1;
+    padding: 0.6rem 0.85rem;
+    border: 1.5px solid var(--outline);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    background: var(--surface-container-high);
+    color: var(--text);
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .patient-row input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(184,160,96,0.15);
+  }
+  .patient-row input::placeholder { color: var(--text-muted); }
+  .personality-select {
+    padding: 0.6rem 0.75rem;
+    border: 1.5px solid var(--outline);
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    background: var(--surface-container-high);
+    color: var(--text);
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .personality-select:hover { border-color: var(--primary); }
+  .load-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+  }
+  .load-btn:hover {
+    background: var(--primary-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+  .load-btn:active { transform: translateY(0); }
+
+  /* ── Status Bar ── */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1.25rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--outline);
+    flex-wrap: wrap;
+    transition: border-color 0.3s ease;
+  }
+  .phase-badge {
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .phase-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .phase-badge.active { background: var(--success-bg); color: var(--success); }
+  .phase-badge.active::before { background: var(--success); }
+  .phase-badge.dormant { background: var(--danger-bg); color: var(--danger); }
+  .phase-badge.dormant::before { background: var(--danger); }
+  .phase-badge.onboarding { background: var(--warning-bg); color: var(--warning); }
+  .phase-badge.onboarding::before { background: var(--warning); }
+  .goal-display { font-style: italic; }
+  .streak-display { font-weight: 700; color: var(--warning); }
+  .dashboard-link {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+  .dashboard-link:hover { text-decoration: underline; }
+
+  /* ── Chat ── */
+  .chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 0;
+  }
+  .chat::-webkit-scrollbar { width: 5px; }
+  .chat::-webkit-scrollbar-track { background: transparent; }
+  .chat::-webkit-scrollbar-thumb { background: var(--outline); border-radius: 5px; }
+  .chat::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  .message {
+    max-width: 80%;
+    padding: 0.9rem 1.15rem;
+    border-radius: var(--radius);
+    font-size: 0.92rem;
+    line-height: 1.55;
+    animation: fadeSlideIn 0.35s ease-out;
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.user {
+    align-self: flex-end;
+    background: var(--user-bubble);
+    border-bottom-right-radius: 5px;
+    box-shadow: var(--shadow-sm);
+  }
+  [data-theme="light"] .message.user { color: #ffffff; }
+  [data-theme="dark"] .message.user { color: #1a1a1a; }
+
+  .message.coach {
+    align-self: flex-start;
+    background: var(--coach-bubble);
+    border: 1px solid var(--outline);
+    color: var(--text);
+    border-bottom-left-radius: 5px;
+    box-shadow: var(--shadow-sm);
+  }
+  .message .role {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    opacity: 0.6;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .role-icon {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .role-icon.coach-icon { background: var(--primary-soft); }
+  .role-icon.coach-icon svg { width: 8px; height: 8px; fill: var(--primary); }
+  .message .time {
+    font-size: 0.65rem;
+    opacity: 0.5;
+    margin-top: 0.3rem;
+  }
+
+  /* ── Input Area ── */
+  .input-area {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--outline);
+    flex-shrink: 0;
+    background: var(--container-bg);
+    transition: background 0.3s ease;
+  }
+  .input-area input {
+    flex: 1;
+    padding: 0.85rem 1.15rem;
+    border: 1.5px solid var(--outline);
+    border-radius: var(--radius-sm);
+    font-size: 0.92rem;
+    background: var(--surface-container-high);
+    color: var(--text);
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-area input::placeholder { color: var(--text-muted); }
+  .input-area input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(184,160,96,0.15);
+  }
+  .input-area button {
+    padding: 0.85rem 1.3rem;
+    background: var(--primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .input-area button:hover {
+    background: var(--primary-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+  .input-area button:active { transform: translateY(0); }
+  .input-area button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .input-area button svg { width: 16px; height: 16px; fill: currentColor; }
+</style>
+</head>
+<body>
+  <div class="container" data-theme="light">
+    <header>
+      <div class="logo-icon">
+        <img id="logoImg" src="/assets/mockups/assets/logo-black.png" alt="MedBridge" />
+      </div>
+      <div class="header-text">
+        <h1>AI Health Coach</h1>
+        <p>Your accountability partner · <a href="/exercises">View exercises</a></p>
+      </div>
+      <!-- SVG moon icon instead of emoji -->
+      <button type="button" class="theme-toggle" id="themeToggle" title="Toggle theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="patient-row">
+      <input type="text" value="patient-001" placeholder="Patient ID" />
+      <select class="personality-select">
+        <option>Encouraging</option>
+        <option>Direct</option>
+        <option>Calm</option>
+      </select>
+      <button class="load-btn">Load</button>
+    </div>
+
+    <div class="status-bar">
+      <span class="phase-badge active">Active</span>
+      <span class="goal-display">Goal: Knee exercises 3x/week</span>
+      <span class="streak-display">5 day streak</span>
+      <a href="/dashboard" class="dashboard-link">Clinician Dashboard</a>
+    </div>
+
+    <div class="chat">
+      <div class="message coach">
+        <div class="role">
+          <span class="role-icon coach-icon">
+            <svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>
+          </span>
+          Coach
+        </div>
+        <div>Hey Sarah! Great job completing your exercises yesterday. How are your knees feeling today? Any pain or stiffness?</div>
+        <div class="time">10:30 AM</div>
+      </div>
+      <div class="message user">
+        <div class="role">You</div>
+        <div>Feeling pretty good actually! A little stiff in the morning but loosens up after I do the stretches.</div>
+        <div class="time">10:45 AM</div>
+      </div>
+      <div class="message coach">
+        <div class="role">
+          <span class="role-icon coach-icon">
+            <svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>
+          </span>
+          Coach
+        </div>
+        <div>That's wonderful progress! Morning stiffness that improves with movement is totally normal. Keep up with those stretches — you're building a great habit. Ready to log today's session?</div>
+        <div class="time">10:46 AM</div>
+      </div>
+      <div class="message user">
+        <div class="role">You</div>
+        <div>Yes! Just finished my quad sets and heel slides</div>
+        <div class="time">11:02 AM</div>
+      </div>
+      <div class="message coach">
+        <div class="role">
+          <span class="role-icon coach-icon">
+            <svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>
+          </span>
+          Coach
+        </div>
+        <div>Amazing — that's 5 days in a row! Your consistency is paying off. On a scale of 1-10, how would you rate the difficulty today?</div>
+        <div class="time">11:03 AM</div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <input type="text" placeholder="Type your message..." />
+      <button>
+        Send
+        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const toggle = document.getElementById('themeToggle');
+    const container = document.querySelector('.container');
+    const logoImg = document.getElementById('logoImg');
+    toggle.addEventListener('click', () => {
+      const current = container.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      container.setAttribute('data-theme', next);
+      document.documentElement.setAttribute('data-theme', next);
+      logoImg.src = next === 'dark' ? '/assets/mockups/assets/logo-white.png' : '/assets/mockups/assets/logo-black.png';
+      // Swap icon
+      toggle.innerHTML = next === 'dark'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    });
+  </script>
+</body>
+</html>

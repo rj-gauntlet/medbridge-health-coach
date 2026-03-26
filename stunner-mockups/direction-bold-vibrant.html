@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedBridge — Bold &amp; Vibrant</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --electric: #6C5CE7;
+    --electric-light: #A29BFE;
+    --coral: #FD7272;
+    --mint: #00B894;
+    --sunrise: #FDCB6E;
+    --surface: #F8F7FF;
+    --card: #FFFFFF;
+    --text: #2D3436;
+    --text-muted: #636E72;
+    --border: #E8E6F0;
+    --gradient-hero: linear-gradient(135deg, #6C5CE7 0%, #A29BFE 50%, #74B9FF 100%);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--surface);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  .phone {
+    width: 420px;
+    height: calc(100vh - 3rem);
+    max-height: 820px;
+    background: var(--card);
+    border-radius: 2rem;
+    box-shadow: 0 25px 60px rgba(108, 92, 231, 0.12), 0 4px 16px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  /* Header */
+  .header {
+    background: var(--gradient-hero);
+    padding: 1.5rem 1.5rem 1.25rem;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -30px;
+    right: -20px;
+    width: 120px;
+    height: 120px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .logo-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    backdrop-filter: blur(10px);
+  }
+  .header h1 { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
+  .header p { font-size: 0.8rem; opacity: 0.85; }
+  .nav-pills {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  .nav-pill {
+    padding: 0.4rem 0.9rem;
+    background: rgba(255,255,255,0.2);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    text-decoration: none;
+    backdrop-filter: blur(10px);
+    transition: background 0.2s;
+  }
+  .nav-pill:hover, .nav-pill.active { background: rgba(255,255,255,0.35); }
+
+  /* Patient bar */
+  .patient-bar {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: #F0EEFF;
+    align-items: center;
+  }
+  .patient-bar input {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    background: white;
+    transition: border-color 0.2s;
+  }
+  .patient-bar input:focus { outline: none; border-color: var(--electric); }
+  .patient-bar select {
+    padding: 0.6rem 0.75rem;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-family: inherit;
+    background: white;
+  }
+  .load-btn {
+    padding: 0.6rem 1rem;
+    background: var(--electric);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .load-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(108,92,231,0.3); }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1.25rem;
+    font-size: 0.8rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+  .phase-badge {
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .phase-badge.active { background: #D5F5E3; color: #00B894; }
+  .phase-badge.dormant { background: #FFE8E8; color: #FD7272; }
+  .streak { font-weight: 600; color: var(--sunrise); }
+  .dashboard-link { margin-left: auto; color: var(--electric); font-weight: 600; text-decoration: none; font-size: 0.75rem; }
+
+  /* Chat */
+  .chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .message {
+    max-width: 82%;
+    padding: 0.9rem 1.1rem;
+    border-radius: 1.25rem;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    animation: slideIn 0.3s ease-out;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .message.user {
+    align-self: flex-end;
+    background: var(--electric);
+    color: white;
+    border-bottom-right-radius: 6px;
+  }
+  .message.coach {
+    align-self: flex-start;
+    background: #F0EEFF;
+    color: var(--text);
+    border-bottom-left-radius: 6px;
+    border: 1px solid #E0DCFA;
+  }
+  .message .role {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.7;
+    margin-bottom: 0.3rem;
+  }
+  .message .time {
+    font-size: 0.65rem;
+    opacity: 0.5;
+    margin-top: 0.3rem;
+  }
+
+  /* Input */
+  .input-area {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border);
+    background: white;
+  }
+  .input-area input {
+    flex: 1;
+    padding: 0.85rem 1.2rem;
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .input-area input:focus { outline: none; border-color: var(--electric); }
+  .input-area button {
+    padding: 0.85rem 1.5rem;
+    background: var(--gradient-hero);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .input-area button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(108,92,231,0.3);
+  }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="header">
+      <div class="header-top">
+        <div class="logo-icon">🏥</div>
+        <div>
+          <h1>AI Health Coach</h1>
+          <p>Your accountability partner</p>
+        </div>
+      </div>
+      <div class="nav-pills">
+        <a class="nav-pill active" href="#">Chat</a>
+        <a class="nav-pill" href="#">Exercises</a>
+        <a class="nav-pill" href="#">Dashboard</a>
+      </div>
+    </div>
+
+    <div class="patient-bar">
+      <input type="text" value="patient-001" placeholder="Patient ID" />
+      <select><option>Encouraging</option></select>
+      <button class="load-btn">Load</button>
+    </div>
+
+    <div class="status-bar">
+      <span class="phase-badge active">Active</span>
+      <span style="font-style:italic">Goal: Knee exercises 3x/week</span>
+      <span class="streak">🔥 5 days</span>
+      <a href="#" class="dashboard-link">Clinician View →</a>
+    </div>
+
+    <div class="chat">
+      <div class="message coach">
+        <div class="role">Coach</div>
+        <div>Hey Sarah! Great job completing your exercises yesterday. How are your knees feeling today? Any pain or stiffness?</div>
+        <div class="time">10:30 AM</div>
+      </div>
+      <div class="message user">
+        <div class="role">You</div>
+        <div>Feeling pretty good actually! A little stiff in the morning but loosens up after I do the stretches.</div>
+        <div class="time">10:45 AM</div>
+      </div>
+      <div class="message coach">
+        <div class="role">Coach</div>
+        <div>That's wonderful progress! Morning stiffness that improves with movement is totally normal. Keep up with those stretches — you're building a great habit. Ready to log today's session?</div>
+        <div class="time">10:46 AM</div>
+      </div>
+      <div class="message user">
+        <div class="role">You</div>
+        <div>Yes! Just finished my quad sets and heel slides 💪</div>
+        <div class="time">11:02 AM</div>
+      </div>
+      <div class="message coach">
+        <div class="role">Coach</div>
+        <div>Amazing! That's 5 days in a row now! 🎉 Your consistency is paying off. On a scale of 1-10, how would you rate the difficulty today?</div>
+        <div class="time">11:03 AM</div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <input type="text" placeholder="Type your message..." />
+      <button>Send</button>
+    </div>
+  </div>
+</body>
+</html>

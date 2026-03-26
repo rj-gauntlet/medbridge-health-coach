@@ -3,59 +3,272 @@
 <head>
   <meta charset="UTF-8">
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <script>
+    (function(){
+      var t = localStorage.getItem('medbridge-theme');
+      if (!t && window.matchMedia('(prefers-color-scheme: dark)').matches) t = 'dark';
+      document.documentElement.setAttribute('data-theme', t || 'light');
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Clinician Dashboard | MedBridge AI Coach</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root, [data-theme="light"] {
-      --primary: #B8A060; --surface: #FAF9F6; --container: #fff; --outline: #D9D4C8;
-      --text: #3d3a35; --text-muted: #7a756c;
+      --primary: #B8A060;
+      --primary-hover: #A89050;
+      --primary-soft: #E8E2D0;
+      --primary-container: #F5F2E8;
+      --surface: #FAF9F6;
+      --surface-container: #F0EDE6;
+      --surface-container-high: #FFFFFF;
+      --outline: #D9D4C8;
+      --text: #3d3a35;
+      --text-muted: #7a756c;
+      --container-bg: #FFFFFF;
+      --container-shadow: 0 4px 24px rgba(61,58,53,0.06);
+      --shadow-sm: 0 1px 3px rgba(61,58,53,0.06);
+      --shadow-md: 0 4px 12px rgba(61,58,53,0.08);
+      --body-bg: #FAF9F6;
+      --radius: 1.125rem;
+      --radius-sm: 0.875rem;
+      --focus-ring: 0 0 0 3px rgba(184,160,96,0.15);
+      --success: #6B9E6B;
+      --success-bg: #E8F0E8;
+      --warning: #C4956A;
+      --warning-bg: #F5EBE0;
+      --danger: #C47A6A;
+      --danger-bg: #F5E0E0;
+      --info-bg: #E8E2D0;
+      --info: #5c5340;
+      --row-hover: rgba(184,160,96,0.06);
     }
     [data-theme="dark"] {
-      --primary: #D4B876; --surface: #121210; --container: #252320; --outline: #4a453d;
-      --text: #f5f2ec; --text-muted: #a39e94;
+      --primary: #D4B876;
+      --primary-hover: #E0C888;
+      --primary-soft: #3d3828;
+      --primary-container: #2e2a22;
+      --surface: #1A1917;
+      --surface-container: #1f1d1a;
+      --surface-container-high: #2e2b26;
+      --outline: #4a453d;
+      --text: #f5f2ec;
+      --text-muted: #a39e94;
+      --container-bg: #1A1917;
+      --container-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.25);
+      --body-bg: #121210;
+      --radius: 1rem;
+      --radius-sm: 0.625rem;
+      --focus-ring: 0 0 0 3px rgba(212,184,118,0.2);
+      --success: #8BC98B;
+      --success-bg: rgba(100,180,100,0.15);
+      --warning: #D4B876;
+      --warning-bg: rgba(212,184,118,0.15);
+      --danger: #D4847C;
+      --danger-bg: rgba(212,132,124,0.15);
+      --info-bg: rgba(212,184,118,0.2);
+      --info: #D4B876;
+      --row-hover: rgba(212,184,118,0.06);
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Nunito', sans-serif; background: var(--surface); color: var(--text); min-height: 100vh; padding: 1.5rem; }
-    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
-    p { color: var(--text-muted); margin-bottom: 1rem; }
-    a { color: var(--primary); }
-    .container { max-width: 900px; margin: 0 auto; background: var(--container); border-radius: 1rem; border: 1px solid var(--outline); overflow: hidden; }
+
+    body {
+      font-family: 'Nunito', -apple-system, sans-serif;
+      background: var(--body-bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1.5rem;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* ── Header ── */
+    .page-header {
+      max-width: 900px;
+      margin: 0 auto 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .page-header .logo img { height: 36px; width: auto; display: block; }
+    .page-header h1 { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.01em; }
+    .theme-toggle {
+      width: 36px; height: 36px;
+      border: 1px solid var(--outline);
+      border-radius: 10px;
+      background: var(--surface-container-high);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+      margin-left: auto;
+    }
+    .theme-toggle:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .theme-toggle:active { transform: translateY(0); }
+    .theme-toggle svg { width: 18px; height: 18px; }
+
+    .page-subtitle {
+      max-width: 900px;
+      margin: 0 auto 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+    .page-subtitle a { color: var(--primary); text-decoration: none; font-weight: 600; }
+    .page-subtitle a:hover { text-decoration: underline; }
+
+    /* ── Table container ── */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--container-bg);
+      border-radius: 1rem;
+      border: 1px solid var(--outline);
+      overflow: hidden;
+      box-shadow: var(--container-shadow);
+      transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--outline); }
-    th { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; }
-    .phase { padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
-    .phase.active { background: #dcfce7; color: #15803d; }
-    .phase.onboarding { background: #dbeafe; color: #1d4ed8; }
-    .phase.re-engaging { background: #fef3c7; color: #b45309; }
-    .phase.dormant { background: #f1f5f9; color: #64748b; }
-    .phase.pending { background: #f1f5f9; color: #64748b; }
-    .at-risk { color: #dc2626; font-weight: 600; }
-    .summary-preview { font-size: 0.85rem; color: var(--text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .empty { padding: 2rem; text-align: center; color: var(--text-muted); }
-    .expand-btn { padding: 0.35rem 0.6rem; font-size: 0.75rem; background: var(--primary); color: #fff; border: none; border-radius: 0.5rem; cursor: pointer; }
-    .expand-btn:hover { opacity: 0.9; }
-    .patient-row { cursor: pointer; }
-    .patient-row:hover { background: rgba(184, 160, 96, 0.08); }
-    .drawer-row td { padding: 0; vertical-align: top; background: var(--surface); border-bottom: 1px solid var(--outline); }
-    .drawer-content { padding: 1.25rem 1.5rem; }
+    th {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      background: var(--surface-container);
+    }
+
+    /* ── Phase badge ── */
+    .phase {
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .phase::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .phase.active { background: var(--success-bg); color: var(--success); }
+    .phase.active::before { background: var(--success); }
+    .phase.onboarding { background: var(--info-bg); color: var(--info); }
+    .phase.onboarding::before { background: var(--info); }
+    .phase.re-engaging { background: var(--warning-bg); color: var(--warning); }
+    .phase.re-engaging::before { background: var(--warning); }
+    .phase.dormant { background: var(--danger-bg); color: var(--danger); }
+    .phase.dormant::before { background: var(--danger); }
+    .phase.pending { background: var(--surface-container); color: var(--text-muted); }
+    .phase.pending::before { background: var(--text-muted); }
+
+    .at-risk { color: var(--danger); font-weight: 700; }
+
+    /* ── Rows ── */
+    .patient-row { cursor: pointer; transition: background 0.15s ease; }
+    .patient-row:hover { background: var(--row-hover); }
+    .patient-row td { font-size: 0.88rem; }
+
+    .expand-btn {
+      padding: 0.35rem 0.7rem;
+      font-size: 0.75rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-family: inherit;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+    .expand-btn:hover {
+      background: var(--primary-hover);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .expand-btn:active { transform: translateY(0); }
+
+    /* ── Drawer ── */
+    .drawer-row td {
+      padding: 0;
+      vertical-align: top;
+      background: var(--surface-container);
+      border-bottom: 1px solid var(--outline);
+    }
+    .drawer-content {
+      padding: 1.25rem 1.5rem;
+      animation: fadeSlideIn 0.25s ease-out;
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     .drawer-section { margin-bottom: 1rem; }
     .drawer-section:last-child { margin-bottom: 0; }
-    .drawer-section h4 { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.4rem; }
-    .drawer-section p, .drawer-section ul { font-size: 0.9rem; line-height: 1.5; }
+    .drawer-section h4 {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    .drawer-section p, .drawer-section ul { font-size: 0.88rem; line-height: 1.5; }
     .drawer-section ul { list-style: none; }
-    .drawer-section li { padding: 0.25rem 0; border-bottom: 1px solid var(--outline); }
+    .drawer-section li {
+      padding: 0.3rem 0;
+      border-bottom: 1px solid var(--outline);
+      font-size: 0.85rem;
+    }
     .drawer-section li:last-child { border-bottom: none; }
-    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
-    .header-row img { height: 36px; width: auto; display: block; }
+    .drawer-section code {
+      font-size: 0.8rem;
+      background: var(--primary-container);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    .empty {
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
-  <div class="header-row">
-    <img src="assets/mockups/assets/logo-black.png" alt="MedBridge" />
+  <div class="page-header">
+    <div class="logo">
+      <img id="logoImg" src="assets/mockups/assets/logo-black.png" alt="MedBridge" />
+    </div>
     <h1>Clinician Dashboard</h1>
+    <button type="button" class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
   </div>
-  <p>Patient overview: phase, adherence, and conversation summaries. Click a row to open details. <a href="/">← Back to Chat</a></p>
+  <p class="page-subtitle">Patient overview: phase, adherence, and conversation summaries. Click a row to expand details. <a href="/">← Back to Chat</a></p>
   <div class="container">
     <table>
       <thead>
@@ -65,7 +278,29 @@
     </table>
     <div id="empty" class="empty" style="display:none">No patients yet.</div>
   </div>
+
   <script>
+    const THEME_KEY = 'medbridge-theme';
+    const themeToggle = document.getElementById('themeToggle');
+    const logoImg = document.getElementById('logoImg');
+
+    const MOON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    const SUN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+
+    function getTheme() {
+      return localStorage.getItem(THEME_KEY) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    }
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem(THEME_KEY, theme);
+      logoImg.src = theme === 'dark' ? 'assets/mockups/assets/logo-white.png' : 'assets/mockups/assets/logo-black.png';
+      themeToggle.innerHTML = theme === 'dark' ? SUN_SVG : MOON_SVG;
+    }
+    themeToggle.addEventListener('click', () => {
+      setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    });
+    setTheme(getTheme());
+
     (async function() {
       const tbody = document.getElementById('tbody');
       const empty = document.getElementById('empty');
@@ -144,7 +379,6 @@
           tr.className = 'patient-row';
           tr.dataset.threadId = p.thread_id;
           const phaseClass = (p.phase || '').toLowerCase().replace('_', '-');
-          const summaryPreview = (p.conversation_summary || '—').slice(0, 50) + ((p.conversation_summary || '').length > 50 ? '…' : '');
           tr.innerHTML = `
             <td>${p.patient_id}</td>
             <td><span class="phase ${phaseClass}">${p.phase}</span></td>
